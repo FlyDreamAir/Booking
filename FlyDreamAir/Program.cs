@@ -1,10 +1,10 @@
-using FlyDreamAir.Client.Pages;
 using FlyDreamAir.Components;
 using FlyDreamAir.Components.Account;
 using FlyDreamAir.Data;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using PostmarkDotNet;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,7 +43,11 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.Requ
     .AddSignInManager()
     .AddDefaultTokenProviders();
 
-builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+var postmarkApiKey = builder.Configuration["ApiKeys:Postmark"]
+    ?? Environment.GetEnvironmentVariable("POSTMARK_API_KEY")
+    ?? throw new InvalidOperationException("Postmark API Key not found.");
+builder.Services.AddSingleton(new PostmarkClient(postmarkApiKey));
+builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityPostmarkEmailSender>();
 
 var app = builder.Build();
 
