@@ -9,12 +9,13 @@ COPY . ./
 RUN dotnet tool install --global dotnet-ef
 # Restore as distinct layers
 RUN dotnet restore
-# Load development secrets
-RUN --mount=type=secret,id=appsettings_secrets_json,dst=/etc/secrets/appsettings.secrets.json \
-    cat /etc/secrets/appsettings.secrets.json | \
-    dotnet user-secrets set --project FlyDreamAir/FlyDreamAir.csproj
 # Build and publish a release
 RUN dotnet publish -c Release -o out
+# Load development secrets & copy for publish
+RUN --mount=type=secret,id=appsettings_Secrets_json,dst=/etc/secrets/appsettings.Secrets.json \
+    cp /etc/secrets/appsettings.Secrets.json ./out
+RUN cat ./out/appsettings.Secrets.json | \
+    dotnet user-secrets set --project FlyDreamAir/FlyDreamAir.csproj
 # Synchronize database state
 RUN dotnet ef database update --project FlyDreamAir/FlyDreamAir.csproj
 

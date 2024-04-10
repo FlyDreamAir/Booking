@@ -8,6 +8,8 @@ using PostmarkDotNet;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Configuration.AddJsonFile("appsettings.Secrets.json", optional: true);
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
@@ -25,15 +27,8 @@ builder.Services.AddAuthentication(options =>
     })
     .AddIdentityCookies();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-if (connectionString == null)
-{
-    connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING");
-}
-if (connectionString == null)
-{
-    throw new InvalidOperationException("Connection string not found.");
-}
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
@@ -43,10 +38,8 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.Requ
     .AddSignInManager()
     .AddDefaultTokenProviders();
 
-var postmarkApiKey = builder.Configuration["ApiKeys:Postmark"]
-    ?? Environment.GetEnvironmentVariable("POSTMARK_API_KEY")
-    ?? throw new InvalidOperationException("Postmark API Key not found.");
-builder.Services.AddSingleton(new PostmarkClient(postmarkApiKey));
+builder.Services.AddSingleton(new PostmarkClient(builder.Configuration["ApiKeys:Postmark"]
+    ?? throw new InvalidOperationException("Postmark API key not found.")));
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityPostmarkEmailSender>();
 
 var app = builder.Build();
