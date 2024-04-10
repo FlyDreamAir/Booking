@@ -49,6 +49,10 @@ builder.Services.AddSingleton(new PostmarkClient(builder.Configuration["ApiKeys:
     ?? throw new InvalidOperationException("Postmark API key not found.")));
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityPostmarkEmailSender>();
 
+builder.Services
+    .AddEndpointsApiExplorer()
+    .AddSwaggerGen();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -56,6 +60,8 @@ if (app.Environment.IsDevelopment())
 {
     app.UseWebAssemblyDebugging();
     app.UseMigrationsEndPoint();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 else
 {
