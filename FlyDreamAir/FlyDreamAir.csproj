@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FlyDreamAir.Client\FlyDreamAir.Client.csproj" />
+    <ProjectReference Include="..\FlyDreamAir.Data\FlyDreamAir.Data.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="8.0.4" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.4" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.4" />
