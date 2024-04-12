@@ -6,6 +6,7 @@ using FlyDreamAir.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using MudBlazor.Services;
 using PostmarkDotNet;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -59,6 +60,8 @@ builder.Services.AddScoped<FlightsService>();
 builder.Services
     .AddEndpointsApiExplorer()
     .AddSwaggerGen();
+
+builder.Services.AddMudServices();
 
 var app = builder.Build();
 

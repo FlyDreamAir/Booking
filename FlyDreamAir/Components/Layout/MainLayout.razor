@@ -1,20 +1,113 @@
 ﻿@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+<MudThemeProvider Theme="@FlyDreamAirTheme" />
+<MudDialogProvider />
+<MudSnackbarProvider />
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
+<style>
+    .FlyDreamAir-Nav-Button {
+        border-radius: 100px;
+        max-height: var(--mud-appbar-height)
+        padding: 0;
+    }
+</style>
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
+<MudLayout>
+    <DeviceView>
+        <Desktop>
+            <MudAppBar Style="background-color: var(--mud-palette-surface)" Elevation="0">
+                <MudNavButton Href="/" Match="NavLinkMatch.All" Class="FlyDreamAir-Nav-Button">FlyDreamAir</MudNavButton>
+                <MudSpacer />
+                <MudStack Justify="@Justify.FlexEnd" Row="true">
+                    <MudNavButton Href="/Flights" Class="FlyDreamAir-Nav-Button">Flights</MudNavButton>
+                    <MudNavButton Href="/Bookings" Class="FlyDreamAir-Nav-Button">Bookings</MudNavButton>
+                    <MudNavButton Href="/Explore" Class="FlyDreamAir-Nav-Button">Explore</MudNavButton>
+                    <AuthorizeView>
+                        <Authorized>
+                            <MudButton Variant="Variant.Outlined"
+                                       EndIcon="@Icons.Material.Filled.AccountCircle"
+                                       Class="FlyDreamAir-Nav-Button">
+                                Account
+                            </MudButton>
+                        </Authorized>
+                        <NotAuthorized>
+                            <MudNavButton Href="/Account/Login" Class="FlyDreamAir-Nav-Button">Sign in</MudNavButton>
+                            <MudButton Href="/Account/Register"
+                                       Variant="Variant.Filled"
+                                       Color="Color.Primary"
+                                       Class="FlyDreamAir-Nav-Button">Sign up</MudButton>
+                        </NotAuthorized>
+                    </AuthorizeView>
+                </MudStack>
+            </MudAppBar>
+        </Desktop>
+        <Mobile>
+            <MudAppBar Style="background-color: var(--mud-palette-surface)" Elevation="0">
+                @{
+                    string? name = NavigationManager.ToBaseRelativePath(NavigationManager.Uri)
+                        .Split('/', '?')
+                        .FirstOrDefault();
+                    if (!string.IsNullOrEmpty(name))
+                    {
+                        name = name[..1].ToUpperInvariant() + new string(name.Skip(1).ToArray());
+                    }
+                    if (string.IsNullOrEmpty(name))
+                    {
+                        <MudIconButton Icon="@Icons.Material.Filled.Menu" />
+                        name = "FlyDreamAir";
+                    }
+                    else
+                    {
+                        <MudIconButton Icon="@Icons.Material.Filled.NavigateBefore" />
+                    }
+
+                    <h4 class="flex-grow-1 m-0 text-center" style="color: var(--mud-palette-text-primary)">@name</h4>
+                }
+                <MudIconButton Icon="@Icons.Material.Filled.AccountCircle" />
+            </MudAppBar>
+            <MudAppBar Bottom="true" Elevation="0">
+                <MudStack Justify="@Justify.SpaceEvenly" Row="true" class="flex-grow-1">
+                    <MudNavButton Href="/Flights" Class="FlyDreamAir-Nav-Button">
+                        <MudIcon Icon="@Icons.Material.Outlined.Flight" />
+                        <br />
+                        Flights
+                    </MudNavButton>
+                    <MudNavButton Href="/Bookings" Class="FlyDreamAir-Nav-Button">
+                        <MudIcon Icon="@Icons.Material.Outlined.BookOnline" />
+                        <br />
+                        Bookings
+                    </MudNavButton>
+                    <MudNavButton Href="/Explore" Class="FlyDreamAir-Nav-Button">
+                        <MudBadge Dot="true" Overlap="true" Color="Color.Error">
+                            <MudIcon Icon="@Icons.Material.Outlined.Explore" />
+                        </MudBadge>
+                        <br />
+                        Explore
+                    </MudNavButton>
+                </MudStack>
+            </MudAppBar>
+        </Mobile>
+    </DeviceView>
+    <MudMainContent>
+        @Body
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    MudTheme FlyDreamAirTheme = new()
+    {
+        Palette = new PaletteLight()
+        {
+            Surface = new("#FEF7FF"),
+            AppbarBackground = new("#E8DEF8")
+        },
+        LayoutProperties = new LayoutProperties()
+        {
+            AppbarHeight = "72px"
+        }
+    };
+}
 
 <div id="blazor-error-ui">
     An unhandled error has occurred.
