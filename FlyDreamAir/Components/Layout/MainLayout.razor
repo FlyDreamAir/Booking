@@ -8,13 +8,11 @@
 <style>
     .FlyDreamAir-Nav-Button {
         border-radius: 100px;
-        max-height: var(--mud-appbar-height)
-        padding: 0;
     }
 </style>
 
 <MudLayout>
-    <DeviceView>
+    <DeviceViewCss>
         <Desktop>
             <MudAppBar Style="background-color: var(--mud-palette-surface)" Elevation="0">
                 <MudNavButton Href="/" Match="NavLinkMatch.All" Class="FlyDreamAir-Nav-Button">FlyDreamAir</MudNavButton>
@@ -88,7 +86,7 @@
                 </MudStack>
             </MudAppBar>
         </Mobile>
-    </DeviceView>
+    </DeviceViewCss>
     <MudMainContent>
         @Body
     </MudMainContent>

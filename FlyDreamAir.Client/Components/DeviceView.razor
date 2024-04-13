@@ -1,0 +1,67 @@
+﻿@implements IAsyncDisposable
+@inject IJSRuntime JSRuntime
+
+@if (_isMobile == true)
+{
+    @Mobile
+}
+else if (_isMobile == false)
+{
+    @Desktop
+}
+else
+{
+    @Unknown
+}
+
+@code {
+    [Parameter]
+    public RenderFragment? Desktop { get; set; }
+
+    [Parameter]
+    public RenderFragment? Mobile { get; set; }
+
+    [Parameter]
+    public RenderFragment? Unknown { get; set; }
+
+    private bool? _isMobile;
+    private DotNetObjectReference<DeviceView>? _objRef;
+
+    public DeviceView()
+    {
+        _objRef = DotNetObjectReference.Create(this);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync($"{nameof(DeviceView)}.RegisterAsync", _objRef);
+        }
+        catch
+        {
+            // Ignore, static server rendering exceptions.
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    [JSInvokable]
+    public virtual void OnChange(bool isMobile)
+    {
+        if (_isMobile != isMobile)
+        {
+            _isMobile = isMobile;
+            StateHasChanged();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_objRef != null)
+        {
+            await JSRuntime.InvokeVoidAsync($"{nameof(DeviceView)}.Unregister", _objRef);
+            _objRef.Dispose();
+            _objRef = null;
+        }
+    }
+}

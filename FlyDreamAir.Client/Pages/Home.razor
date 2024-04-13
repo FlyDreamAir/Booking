@@ -1,0 +1,26 @@
+﻿@page "/"
+@rendermode InteractiveWebAssembly
+
+<PageTitle>Home</PageTitle>
+
+<h1>Hello, world!</h1>
+
+<div>
+    Welcome to your new app.
+</div>
+
+<div>
+    <DeviceView>
+        <Desktop>
+            You are using the desktop version.
+        </Desktop>
+        <Mobile>
+            You are using the mobile version.
+        </Mobile>
+        <Unknown>
+            <MudProgressCircular Indeterminate="true" />
+        </Unknown>
+    </DeviceView>
+</div>
+
+<MudButton>Test</MudButton>
