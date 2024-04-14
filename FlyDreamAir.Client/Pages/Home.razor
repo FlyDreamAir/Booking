@@ -1,25 +1,54 @@
 ﻿@page "/"
+@using FlyDreamAir.Data.Model
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
-
-<div>
-    Welcome to your new app.
+<div class="m-2">
+    <MudForm>
+        <MudStack>
+            @{
+                RenderFragment fromSelect =
+                @<MudSelect T="Airport"
+                            Label="From"
+                            Adornment="@Adornment.Start"
+                            AdornmentIcon="@Icons.Material.Outlined.PinDrop"
+                            Variant="@Variant.Outlined" />;
+                RenderFragment toSelect =
+                @<MudSelect T="Airport"
+                            Label="To"
+                            Adornment="@Adornment.Start"
+                            AdornmentIcon="@Icons.Material.Outlined.AirplanemodeActive"
+                            Variant="@Variant.Outlined" />;
+                RenderFragment datePicker =
+                @<MudDatePicker Placeholder="Select date"
+                                Adornment="@Adornment.Start"
+                                AdornmentIcon="@Icons.Material.Outlined.CalendarToday"
+                                Variant="@Variant.Outlined" />;
+            }
+            <DeviceView>
+                <Desktop>
+                    <MudStack Row="true" Justify="@Justify.SpaceEvenly">
+                        @fromSelect
+                        @toSelect
+                        @datePicker
+                    </MudStack>
+                </Desktop>
+                <Mobile>
+                    <MudStack Row="true">
+                        @fromSelect
+                        @toSelect
+                    </MudStack>
+                    @datePicker
+                </Mobile>
+            </DeviceView>
+            <MudStack Row="true" Justify="@Justify.Center">
+                <MudButton Variant="@Variant.Filled"
+                           Color="@Color.Primary"
+                           Size="@Size.Large"
+                           Style="border-radius: 100px;">
+                    Search
+                </MudButton>
+            </MudStack>
+        </MudStack>
+    </MudForm>
 </div>
-
-<div>
-    <DeviceView>
-        <Desktop>
-            You are using the desktop version.
-        </Desktop>
-        <Mobile>
-            You are using the mobile version.
-        </Mobile>
-        <Unknown>
-            <MudProgressCircular Indeterminate="true" />
-        </Unknown>
-    </DeviceView>
-</div>
-
-<MudButton>Test</MudButton>
