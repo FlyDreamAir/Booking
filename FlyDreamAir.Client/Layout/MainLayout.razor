@@ -15,7 +15,9 @@
     <DeviceView>
         <Desktop>
             <MudAppBar Style="background-color: var(--mud-palette-surface)" Elevation="0">
-                <MudNavButton Href="/" Match="NavLinkMatch.All" Class="FlyDreamAir-Nav-Button">FlyDreamAir</MudNavButton>
+                <a href="/">
+                    <MudImage Src="assets/logo.png" Style="max-height: var(--mud-appbar-height)" />
+                </a>
                 <MudSpacer />
                 <MudStack Justify="@Justify.FlexEnd" Row="true">
                     <MudNavButton Href="/Flights" Class="FlyDreamAir-Nav-Button">Flights</MudNavButton>
