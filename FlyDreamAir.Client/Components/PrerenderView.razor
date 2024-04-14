@@ -1,0 +1,48 @@
+﻿@inject IJSRuntime JSRuntime
+
+@if (_isPrerender)
+{
+    @Prerender
+}
+else
+{
+    @Content
+}
+
+@code {
+    [Parameter]
+    public RenderFragment? Prerender { get; init; }
+
+    [Parameter]
+    public RenderFragment? Content { get; init; }
+
+    private bool _isPrerender = true;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        var oldIsPrerender = _isPrerender;
+
+        if (JSRuntime is IJSInProcessRuntime)
+        {
+            _isPrerender = false;
+        }
+        else
+        {
+            try
+            {
+                _isPrerender = await JSRuntime.InvokeAsync<bool>("Boolean", false);
+            }
+            catch (InvalidOperationException)
+            {
+                // We are in server pre-render.
+            }
+        }
+
+        if (_isPrerender != oldIsPrerender)
+        {
+            StateHasChanged();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+}

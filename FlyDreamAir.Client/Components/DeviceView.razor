@@ -1,18 +1,27 @@
-﻿@implements IAsyncDisposable
-@inject IJSRuntime JSRuntime
+﻿@inject IJSRuntime JSRuntime
 
-@if (_isMobile == true)
-{
-    @Mobile
-}
-else if (_isMobile == false)
-{
-    @Desktop
-}
-else
-{
-    @Unknown
-}
+<PrerenderView>
+    <Prerender>
+        <DeviceViewCss>
+            <Mobile>
+                @Mobile
+            </Mobile>
+            <Desktop>
+                @Desktop
+            </Desktop>
+        </DeviceViewCss>
+    </Prerender>
+    <Content>
+        @if(_isMobile == false)
+        {
+            @Desktop
+        }
+        else
+        {
+            @Mobile
+        }
+    </Content>
+</PrerenderView>
 
 @code {
     [Parameter]
@@ -32,16 +41,18 @@ else
         _objRef = DotNetObjectReference.Create(this);
     }
 
+    protected override void OnInitialized()
+    {
+        if (JSRuntime is IJSInProcessRuntime InProcessRuntime)
+        {
+            _isMobile = InProcessRuntime.Invoke<bool>($"{nameof(DeviceView)}.IsMobile");
+        }
+        base.OnInitialized();
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        try
-        {
-            await JSRuntime.InvokeVoidAsync($"{nameof(DeviceView)}.RegisterAsync", _objRef);
-        }
-        catch
-        {
-            // Ignore, static server rendering exceptions.
-        }
+        await TryJSInvokeVoidAsync($"{nameof(DeviceView)}.RegisterAsync", _objRef);
         await base.OnAfterRenderAsync(firstRender);
     }
 
@@ -59,9 +70,21 @@ else
     {
         if (_objRef != null)
         {
-            await JSRuntime.InvokeVoidAsync($"{nameof(DeviceView)}.Unregister", _objRef);
+            await TryJSInvokeVoidAsync($"{nameof(DeviceView)}.Unregister", _objRef);
             _objRef.Dispose();
             _objRef = null;
+        }
+    }
+
+    private async Task TryJSInvokeVoidAsync(string identifier, params object?[]? args)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync(identifier, args);
+        }
+        catch (InvalidOperationException)
+        {
+            // Ignore, static server rendering exceptions.
         }
     }
 }
