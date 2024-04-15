@@ -4,6 +4,19 @@
 <PageTitle>Home</PageTitle>
 
 <div class="m-2">
+    <div class="m-5">
+        <DeviceView>
+            <Desktop>
+                <MudImage Src="assets/plane.png" ObjectFit="@ObjectFit.Cover"
+                          Style="max-width: 50%; margin-left: auto; margin-right: auto; display: block;" />
+            </Desktop>
+            <Mobile>
+                <MudImage Src="assets/plane.png" ObjectFit="@ObjectFit.Cover"
+                          Style="max-width: 100%; margin-left: auto; margin-right: auto; display: block;" />
+            </Mobile>
+        </DeviceView>
+    </div>
+
     <MudForm>
         <MudStack>
             @{
@@ -27,7 +40,8 @@
             }
             <DeviceView>
                 <Desktop>
-                    <MudStack Row="true" Justify="@Justify.SpaceEvenly">
+                    <MudStack Row="true" Justify="@Justify.SpaceEvenly"
+                              Style="width: 75%; margin-left: auto; margin-right: auto;">
                         @fromSelect
                         @toSelect
                         @datePicker
