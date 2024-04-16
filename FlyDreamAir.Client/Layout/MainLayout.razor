@@ -1,4 +1,4 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 @inject NavigationManager NavigationManager
 
 <MudThemeProvider Theme="@FlyDreamAirTheme" />
@@ -105,7 +105,15 @@
         },
         LayoutProperties = new LayoutProperties()
         {
-            AppbarHeight = "72px"
+            AppbarHeight = "72px",
+        },
+        Typography = new Typography()
+        {
+            Button = new Button()
+            {
+                FontSize = "1rem",
+                TextTransform = "none"
+            }
         }
     };
 }
