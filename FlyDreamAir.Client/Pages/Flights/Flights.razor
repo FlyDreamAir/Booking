@@ -1,6 +1,36 @@
 ﻿@page "/Flights/Flights"
+@inject IDialogService Dialog
 
 <PageTitle>Flights</PageTitle>
+
+<DeviceView>
+    <Desktop>
+        <MudTitle Typo="@Typo.h4"
+                  Align="@Align.Center"
+                  Color="@Color.Primary"
+                  Class="m-3"
+                  Style="user-select: none;" />
+        <MudStack Row="true" Class="m-2">
+            <MudStack>
+                <FlightSearchView />
+            </MudStack>
+            <MudStack Style="min-width: 33%;">
+            </MudStack>
+        </MudStack>
+    </Desktop>
+    <Mobile>
+        <MudButton Style="border-radius: 100px; background-color: var(--mud-palette-background-grey);"
+                   FullWidth="true"
+                   StartIcon="@Icons.Material.Outlined.Menu"
+                   EndIcon="@Icons.Material.Outlined.Search"
+                   Size="@Size.Large"
+                   OnClick="ButtonSearch_Click">
+            <MudText Style="width: 100%;" Align="@Align.Left">
+                @From, @To
+            </MudText>
+        </MudButton>
+    </Mobile>
+</DeviceView>
 
 @code {
     [SupplyParameterFromQuery]
@@ -11,4 +41,14 @@
 
     [SupplyParameterFromQuery]
     public required DateTime Date { get; set; }
+
+    private void ButtonSearch_Click()
+    {
+        Dialog.Show<FlightSearchDialog>("Flights", new DialogOptions
+        {
+            NoHeader = true,
+            MaxWidth = MaxWidth.Large,
+            FullWidth = true
+        });
+    }
 }
