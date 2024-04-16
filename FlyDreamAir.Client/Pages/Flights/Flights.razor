@@ -1,0 +1,14 @@
+﻿@page "/Flights/Flights"
+
+<PageTitle>Flights</PageTitle>
+
+@code {
+    [SupplyParameterFromQuery]
+    public required string From { get; set; }
+
+    [SupplyParameterFromQuery]
+    public required string To { get; set; }
+
+    [SupplyParameterFromQuery]
+    public required DateTime Date { get; set; }
+}

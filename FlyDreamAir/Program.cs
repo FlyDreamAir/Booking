@@ -1,3 +1,4 @@
+using ClientServices = FlyDreamAir.Client.Services;
 using FlyDreamAir.Components;
 using FlyDreamAir.Components.Account;
 using FlyDreamAir.Data;
@@ -56,6 +57,10 @@ builder.Services.AddControllers();
 
 builder.Services.AddScoped<AirportsService>();
 builder.Services.AddScoped<FlightsService>();
+
+// Hacks for prerendering to work.
+builder.Services.AddScoped(sp => new HttpClient());
+builder.Services.AddScoped<ClientServices.BookingsService>();
 
 builder.Services
     .AddEndpointsApiExplorer()
