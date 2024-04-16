@@ -23,87 +23,61 @@
         <RedirectToUrl ReturnUrl="@ReturnUrl" />
     </Authorized>
     <NotAuthorized>
-        <MudForm @ref="_form">
-            <form action="/api/Account/Login?returnUrl=@(Uri.EscapeDataString(returnUrl))"
-                  method="post"
-                  @ref="_htmlForm">
-                <MudStack Spacing="1">
-                    <MudTextField T="string"
-                                  Variant="@Variant.Outlined"
-                                  Label="Username"
-                                  Required="true"
-                                  RequiredError="Please enter your username."
-                                  UserAttributes="@(new(){ {"name", "userName"} })" />
-                    <MudTextField T="string"
-                                  Variant="@Variant.Outlined"
-                                  Label="Password"
-                                  InputType="@InputType.Password"
-                                  Required="true"
-                                  RequiredError="Please enter your password."
-                                  UserAttributes="@(new(){ {"name", "password"} })" />
-                    @if (!string.IsNullOrEmpty(Error))
-                    {
-                        <MudText Color="@Color.Error">@Error</MudText>
-                    }
-                    <MudStack Row="true" Justify="@Justify.Center" Class="m-3">
-                        <MudButton Variant="@Variant.Filled"
-                                   Color="@Color.Primary"
-                                   Size="@Size.Large"
-                                   Style="border-radius: 100px;"
-                                   OnClick="LoginAsync">
-                            Login
-                        </MudButton>
-                    </MudStack>
-                    <MudStack Row="true" Spacing="1" AlignItems="@AlignItems.Center">
-                        <MudDivider Style="width: auto;" />
-                        <MudText>or</MudText>
-                        <MudDivider Style="width: auto;" />
-                    </MudStack>
-                    <MudStack Spacing="1" Class="m-3">
-                        <MudButton Variant="@Variant.Filled"
-                                   Color="@Color.Transparent"
-                                   Size="@Size.Large"
-                                   StartIcon="@Icons.Custom.Brands.Google"
-                                   Style="background-color: white;"
-                                   Href="@(GetExternalLoginUrl("Google"))">
-                            Sign In with Google
-                        </MudButton>
-                    </MudStack>
+        <MudHtmlForm Action="/api/Account/Login"
+                     Method="@HtmlFormMethod.Post"
+                     ActionQueries="@(new(){ { "returnUrl", returnUrl } })"
+                     Context="form">
+            <MudStack Spacing="1">
+                <MudTextField T="string"
+                              Variant="@Variant.Outlined"
+                              Label="Username"
+                              Required="true"
+                              RequiredError="Please enter your username."
+                              UserAttributes="@(new(){ {"name", "userName"} })" />
+                <MudTextField T="string"
+                              Variant="@Variant.Outlined"
+                              Label="Password"
+                              InputType="@InputType.Password"
+                              Required="true"
+                              RequiredError="Please enter your password."
+                              UserAttributes="@(new(){ {"name", "password"} })" />
+                @if (!string.IsNullOrEmpty(Error))
+                {
+                    <MudText Color="@Color.Error">@Error</MudText>
+                }
+                <MudStack Row="true" Justify="@Justify.Center" Class="m-3">
+                    <MudButton Variant="@Variant.Filled"
+                               Color="@Color.Primary"
+                               Size="@Size.Large"
+                               Style="border-radius: 100px;"
+                               OnClick="form.Submit">
+                        Login
+                    </MudButton>
                 </MudStack>
-            </form>
-        </MudForm>
+                <MudStack Row="true" Spacing="1" AlignItems="@AlignItems.Center">
+                    <MudDivider Style="width: auto;" />
+                    <MudText>or</MudText>
+                    <MudDivider Style="width: auto;" />
+                </MudStack>
+                <MudStack Spacing="1" Class="m-3">
+                    <MudButton Variant="@Variant.Filled"
+                               Color="@Color.Transparent"
+                               Size="@Size.Large"
+                               StartIcon="@Icons.Custom.Brands.Google"
+                               Style="background-color: white;"
+                               Href="@(GetExternalLoginUrl("Google"))">
+                        Sign In with Google
+                    </MudButton>
+                </MudStack>
+            </MudStack>
+        </MudHtmlForm>
     </NotAuthorized>
 </AuthorizeView>
 
 @code {
-    private ElementReference _htmlForm;
-    private MudForm? _form;
-
     [SupplyParameterFromQuery]
     public string? ReturnUrl { get; set; }
 
     [SupplyParameterFromQuery]
     public string? Error { get; set; }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (!firstRender && _form is not null && _form.IsValid)
-        {
-            // TODO: Publish this little piece of hack on the Reality blog.
-            await JSRuntime.InvokeVoidAsync("HTMLFormElement.prototype.submit.call", _htmlForm);
-        }
-        await base.OnAfterRenderAsync(firstRender);
-    }
-
-    private async Task LoginAsync()
-    {
-        if (_form is not null)
-        {
-            await _form.Validate();
-            if (_form.IsValid)
-            {
-                StateHasChanged();
-            }
-        }
-    }
 }

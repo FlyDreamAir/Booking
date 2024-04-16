@@ -1,5 +1,6 @@
 ﻿@page "/"
 @using FlyDreamAir.Data.Model
+@inject IJSRuntime JSRuntime
 
 <PageTitle>Home</PageTitle>
 
@@ -17,27 +18,38 @@
         </DeviceView>
     </div>
 
-    <MudForm>
+    <MudHtmlForm Action="/Flights/Flights"
+                 Method="@HtmlFormMethod.Get"
+                 Context="form">
         <MudStack>
             @{
                 RenderFragment fromSelect =
-                @<MudSelect T="Airport"
-                            Label="From"
-                            Adornment="@Adornment.Start"
-                            AdornmentIcon="@Icons.Material.Outlined.PinDrop"
-                            Variant="@Variant.Outlined" />;
-                RenderFragment toSelect =
-                @<MudSelect T="Airport"
-                            Label="To"
-                            Adornment="@Adornment.Start"
-                            AdornmentIcon="@Icons.Material.Outlined.AirplanemodeActive"
-                            Variant="@Variant.Outlined" />;
-                RenderFragment datePicker =
-                @<MudDatePicker Placeholder="Select date"
+                    @<MudSelect T="Airport"
+                                Label="From"
+                                Required="true"
+                                RequiredError="Please enter your departure location."
                                 Adornment="@Adornment.Start"
-                                AdornmentIcon="@Icons.Material.Outlined.CalendarToday"
+                                AdornmentIcon="@Icons.Material.Outlined.PinDrop"
                                 Variant="@Variant.Outlined"
-                                TransformOrigin="@Origin.CenterLeft"/>;
+                                UserAttributes="@(new(){ {"name", "from"} })" />;
+                RenderFragment toSelect =
+                    @<MudSelect T="Airport"
+                                Label="To"
+                                Required="true"
+                                RequiredError="Please enter your destination."
+                                Adornment="@Adornment.Start"
+                                AdornmentIcon="@Icons.Material.Outlined.AirplanemodeActive"
+                                Variant="@Variant.Outlined"
+                                UserAttributes="@(new(){ {"name", "to"} })" />;
+                RenderFragment datePicker =
+                    @<MudDatePicker Placeholder="Select date"
+                                    Adornment="@Adornment.Start"
+                                    AdornmentIcon="@Icons.Material.Outlined.CalendarToday"
+                                    Required="true"
+                                    RequiredError="Please enter your departure date."
+                                    Variant="@Variant.Outlined"
+                                    TransformOrigin="@Origin.CenterLeft"
+                                    UserAttributes="@(new(){ {"name", "date"} })" />;
             }
             <DeviceView>
                 <Desktop>
@@ -60,10 +72,11 @@
                 <MudButton Variant="@Variant.Filled"
                            Color="@Color.Primary"
                            Size="@Size.Large"
-                           Style="border-radius: 100px;">
+                           Style="border-radius: 100px;"
+                           OnClick="form.Submit">
                     Search
                 </MudButton>
             </MudStack>
         </MudStack>
-    </MudForm>
+    </MudHtmlForm>
 </div>
