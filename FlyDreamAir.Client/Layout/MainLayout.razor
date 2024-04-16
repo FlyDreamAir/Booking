@@ -110,31 +110,29 @@
                     </MudDrawerHeader>
                     @_navMenuAccount
                 </MudDrawer>
-                @if (!NavigationManager.Uri.Contains("/Account/", StringComparison.InvariantCultureIgnoreCase))
+                @if (!NavigationManager.Uri.Contains("/Account/",
+                        StringComparison.InvariantCultureIgnoreCase))
                 {
-                    <MudAppBar Style="background-color: var(--mud-palette-surface)" Elevation="0">
+                    <MudAppBar Style="background-color: var(--mud-palette-surface)"
+                               Elevation="0">
                         @{
-                            string? name = NavigationManager.ToBaseRelativePath(NavigationManager.Uri)
-                            .Split('/', '?')
-                            .FirstOrDefault();
-                            if (!string.IsNullOrEmpty(name))
-                            {
-                                name = name[..1].ToUpperInvariant() + new string(name.Skip(1).ToArray());
-                            }
-                            if (string.IsNullOrEmpty(name))
+                            // String is empty or query string is right at the start.
+                            // We have a root URL.
+                            if (NavigationManager.ToBaseRelativePath(NavigationManager.Uri)
+                                    .TrimStart('?') == "")
                             {
                                 <MudIconButton Icon="@Icons.Material.Filled.Menu" />
-                                name = "FlyDreamAir";
                             }
                             else
                             {
-                                <MudIconButton Icon="@Icons.Material.Filled.NavigateBefore" />
+                                <MudIconButton Icon="@Icons.Material.Filled.NavigateBefore"
+                                               OnClick="@(() =>
+                                                    JSRuntime.InvokeVoidAsync("history.back"))" />
                             }
 
-                            <h4 class="flex-grow-1 m-0 text-center"
-                                style="color: var(--mud-palette-text-primary)">
-                                @name
-                            </h4>
+                            <MudTitle Typo="Typo.h6"
+                                      Class="flex-grow-1 m-0 text-center"
+                                      Style="color: var(--mud-palette-text-primary);" />
                         }
                         <MudIconButton Icon="@Icons.Material.Filled.AccountCircle"
                                        OnClick="ButtonAccount_Click" />
