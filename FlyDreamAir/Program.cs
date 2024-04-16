@@ -1,6 +1,7 @@
 using FlyDreamAir.Components;
 using FlyDreamAir.Components.Account;
 using FlyDreamAir.Data;
+using FlyDreamAir.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -49,6 +50,10 @@ builder.Services.AddSingleton(new PostmarkClient(builder.Configuration["ApiKeys:
     ?? throw new InvalidOperationException("Postmark API key not found.")));
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityPostmarkEmailSender>();
 
+builder.Services.AddControllers();
+
+builder.Services.AddScoped<AirportsService>();
+
 builder.Services
     .AddEndpointsApiExplorer()
     .AddSwaggerGen();
@@ -78,6 +83,8 @@ app.UseAntiforgery();
 app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(FlyDreamAir.Client._Imports).Assembly);
+
+app.MapControllers();
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
