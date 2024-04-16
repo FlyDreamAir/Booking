@@ -20,7 +20,7 @@ public class BookingsController: ControllerBase
         _airportsService = airportsService;
     }
 
-    [HttpGet("airports")]
+    [HttpGet(nameof(GetAirports))]
     public async Task<ActionResult<IList<Airport>>> GetAirports()
     {
         return await _airportsService.GetAirportsAsync().ToListAsync();
