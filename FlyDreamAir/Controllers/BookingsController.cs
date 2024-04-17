@@ -11,18 +11,34 @@ public class BookingsController: ControllerBase
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly AirportsService _airportsService;
+    private readonly FlightsService _flightsService;
 
     public BookingsController(
         DbContextOptions<ApplicationDbContext> dbContextOptions,
-        AirportsService airportsService)
+        AirportsService airportsService,
+        FlightsService flightsService)
     {
         _dbContext = new(dbContextOptions);
         _airportsService = airportsService;
+        _flightsService = flightsService;
     }
 
     [HttpGet(nameof(GetAirports))]
     public async Task<ActionResult<IList<Airport>>> GetAirports()
     {
         return await _airportsService.GetAirportsAsync().ToListAsync();
+    }
+
+    [HttpGet(nameof(GetJourneys))]
+    public async Task<ActionResult<IList<Journey>>> GetJourneys(
+        [FromQuery]
+        string from,
+        [FromQuery]
+        string to,
+        [FromQuery]
+        DateTime date
+    )
+    {
+        return await _flightsService.GetJourneysAsync(from, to, date).ToListAsync();
     }
 }

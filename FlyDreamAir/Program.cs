@@ -54,6 +54,7 @@ builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityPostmarkEma
 builder.Services.AddControllers();
 
 builder.Services.AddScoped<AirportsService>();
+builder.Services.AddScoped<FlightsService>();
 
 builder.Services
     .AddEndpointsApiExplorer()
