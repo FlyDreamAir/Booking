@@ -12,6 +12,7 @@ namespace FlyDreamAir.Data
         public DbSet<Flight> Flights { get; init; }
         public DbSet<OrderedAddOn> OrderedAddOns { get; init; }
         public DbSet<Payment> Payments { get; init; }
+        public DbSet<ScheduledFlight> ScheduledFlights { get; init; }
         public DbSet<Ticket> Tickets { get; init; }
 
         protected override void OnModelCreating(ModelBuilder builder)
@@ -55,6 +56,15 @@ namespace FlyDreamAir.Data
                 b.HasDiscriminator(e => e.Type)
                     .HasValue<Payment>(nameof(Payment))
                     .HasValue<CreditCardPayment>(nameof(CreditCardPayment));
+            });
+
+            builder.Entity<ScheduledFlight>(b =>
+            {
+                b.HasKey(
+                    nameof(ScheduledFlight.Flight) + nameof(Flight.Id),
+                    nameof(ScheduledFlight.DepartureTime)
+                );
+                b.HasOne(e => e.Flight).WithMany();
             });
 
             builder.Entity<Ticket>(b =>

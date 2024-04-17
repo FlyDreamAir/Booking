@@ -13,7 +13,7 @@ public class Ticket
     public required Booking Booking { get; set; }
 
     [Required]
-    public required Flight Flight { get; set; }
+    public required ScheduledFlight Flight { get; set; }
 
     [Required]
     public required string Type { get; set; }
@@ -26,7 +26,4 @@ public class Ticket
 
     [Required]
     public required string Seat { get; set; }
-
-    [Required]
-    public required DateTime DepartureTime { get; set; }
 }
