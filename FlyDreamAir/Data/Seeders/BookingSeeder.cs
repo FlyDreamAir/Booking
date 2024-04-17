@@ -50,11 +50,17 @@ public static class BookingSeeder
 
         // Domestic
         await dbContext.UpdateFlight(
-            "NT 1024", "SYD", "MEL", new TimeSpan(1, 35, 0), 90,
-            new TimeOnly(9, 00));
+            "NT 1024", "SYD", "MEL", new TimeSpan(1, 35, 0), 120,
+            new TimeOnly(9, 00), new TimeOnly(15, 00));
         await dbContext.UpdateFlight(
-            "NT 1025", "MEL", "SYD", new TimeSpan(1, 25, 0), 90,
-            new TimeOnly(9, 00));
+            "NT 1025", "MEL", "SYD", new TimeSpan(1, 25, 0), 120,
+            new TimeOnly(9, 00), new TimeOnly(15, 00));
+        await dbContext.UpdateFlight(
+            "NT 1026", "SYD", "MEL", new TimeSpan(1, 35, 0), 90,
+            new TimeOnly(12, 00));
+        await dbContext.UpdateFlight(
+            "NT 1027", "MEL", "SYD", new TimeSpan(1, 25, 0), 90,
+            new TimeOnly(12, 00));
 
         await dbContext.SaveChangesAsync();
     }
@@ -66,7 +72,7 @@ public static class BookingSeeder
         string toAirport,
         TimeSpan estimatedTime,
         decimal baseCost,
-        TimeOnly departureTime
+        params TimeOnly[] departureTimes
     )
     {
         var flight = await dbContext.Flights.FirstOrDefaultAsync(f => f.FlightId == flightId);
@@ -92,19 +98,23 @@ public static class BookingSeeder
 
         dbContext.Update(flight);
 
-        var schedule = (DateTime.Now + departureTime.ToTimeSpan()).ToUniversalTime();
-
-        for (int i = 0; i < 10; ++i)
+        foreach (var departureTime in departureTimes)
         {
-            var scheduledFlight = await dbContext.ScheduledFlights
-                .FirstOrDefaultAsync(f => f.DepartureTime == schedule.AddDays(i));
-            if (scheduledFlight is null)
+            var schedule = (DateTime.Now.Date + departureTime.ToTimeSpan()).ToUniversalTime();
+
+            for (int i = 0; i < 10; ++i)
             {
-                dbContext.Update(new ScheduledFlight()
+                var current = schedule.AddDays(i);
+                var scheduledFlight = await dbContext.ScheduledFlights
+                    .FirstOrDefaultAsync(f => f.DepartureTime == current);
+                if (scheduledFlight is null)
                 {
-                    Flight = flight,
-                    DepartureTime = schedule.AddDays(i)
-                });
+                    dbContext.Add(new ScheduledFlight()
+                    {
+                        Flight = flight,
+                        DepartureTime = current
+                    });
+                }
             }
         }
     }
