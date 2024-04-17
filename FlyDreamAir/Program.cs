@@ -1,6 +1,7 @@
 using FlyDreamAir.Components;
 using FlyDreamAir.Components.Account;
 using FlyDreamAir.Data;
+using FlyDreamAir.Data.Seeders;
 using FlyDreamAir.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -67,6 +68,8 @@ if (app.Environment.IsDevelopment())
     app.UseMigrationsEndPoint();
     app.UseSwagger();
     app.UseSwaggerUI();
+
+    await app.SeedBookingData();
 }
 else
 {

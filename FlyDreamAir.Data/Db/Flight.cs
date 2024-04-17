@@ -20,4 +20,7 @@ public class Flight
 
     [Required]
     public required TimeSpan EstimatedTime { get; set; }
+
+    [Required]
+    public required decimal BaseCost { get; set; }
 }
