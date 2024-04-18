@@ -1,4 +1,4 @@
-using Model = FlyDreamAir.Data.Model;
+﻿using Model = FlyDreamAir.Data.Model;
 using FlyDreamAir.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -36,6 +36,9 @@ public class FlightsService
         {
             yield break;
         }
+
+        date = date.ToUniversalTime();
+        returnDate = returnDate.HasValue ? returnDate.Value.ToUniversalTime() : returnDate;
 
         var isTwoWay = returnDate.HasValue;
 
