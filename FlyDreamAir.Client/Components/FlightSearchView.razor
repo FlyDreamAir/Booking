@@ -47,40 +47,40 @@
 
         RenderFragment fromSelect =
             @<MudAutocomplete T="Airport"
-                                @bind-Value="_fromAirport"
-                                SearchFunc="(hint) => GetAirports(hint, _toAirport)"
-                                ToStringFunc="(a) => a?.Id"
-                                ShowProgressIndicator="true"
-                                CoerceText="true"
-                                Strict="false"
-                                Label="From"
-                                Required="true"
-                                RequiredError="Please enter your departure location."
-                                Adornment="@Adornment.Start"
-                                AdornmentIcon="@Icons.Material.Outlined.PinDrop"
-                                Variant="@Variant.Outlined"
-                                Class="FlyDreamAir-LocationSelect"
-                                UserAttributes="@(new(){ {"name", "from"} })">
+                              @bind-Value="_fromAirport"
+                              SearchFunc="(hint) => GetAirports(hint, _toAirport)"
+                              ToStringFunc="(a) => a?.Id"
+                              ShowProgressIndicator="true"
+                              CoerceText="true"
+                              Strict="false"
+                              Label="From"
+                              Required="true"
+                              RequiredError="Please enter your departure location."
+                              Adornment="@Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Outlined.PinDrop"
+                              Variant="@Variant.Outlined"
+                              Class="FlyDreamAir-LocationSelect"
+                              UserAttributes="@(new(){ {"name", "from"} })">
                 <ItemTemplate Context="airport">
                     @itemTemplate(airport)
                 </ItemTemplate>
             </MudAutocomplete>;
         RenderFragment toSelect =
             @<MudAutocomplete T="Airport"
-                                @bind-Value="_toAirport"
-                                SearchFunc="(hint) => GetAirports(hint, _fromAirport)"
-                                ToStringFunc="(a) => a?.Id"
-                                ShowProgressIndicator="true"
-                                CoerceText="true"
-                                Strict="false"
-                                Label="To"
-                                Required="true"
-                                RequiredError="Please enter your destination."
-                                Adornment="@Adornment.Start"
-                                AdornmentIcon="@Icons.Material.Outlined.AirplanemodeActive"
-                                Variant="@Variant.Outlined"
-                                Class="FlyDreamAir-LocationSelect"
-                                UserAttributes="@(new(){ {"name", "to"} })">
+                              @bind-Value="_toAirport"
+                              SearchFunc="(hint) => GetAirports(hint, _fromAirport)"
+                              ToStringFunc="(a) => a?.Id"
+                              ShowProgressIndicator="true"
+                              CoerceText="true"
+                              Strict="false"
+                              Label="To"
+                              Required="true"
+                              RequiredError="Please enter your destination."
+                              Adornment="@Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Outlined.AirplanemodeActive"
+                              Variant="@Variant.Outlined"
+                              Class="FlyDreamAir-LocationSelect"
+                              UserAttributes="@(new(){ {"name", "to"} })">
                 <ItemTemplate Context="airport">
                     @itemTemplate(airport)
                 </ItemTemplate>
@@ -89,7 +89,7 @@
             @<MudDatePicker @bind-Date="_date"
                             Placeholder="Select date"
                             DateFormat="dd/MM/yyyy"
-                            MinDate="DateTime.Today"
+                            MinDate="DateTime.Today.AddDays(1)"
                             Adornment="@Adornment.Start"
                             AdornmentIcon="@Icons.Material.Outlined.CalendarToday"
                             Required="true"
@@ -160,8 +160,6 @@
                     @datePicker(false)
                     <div></div>
                     <div></div>
-                    <div></div>
-                    <div></div>
                     @submitButton(form)
                 </MudStack>
             </Desktop>
@@ -186,6 +184,11 @@
                         .ToString("yyyy-MM-dd",
                             System.Globalization.CultureInfo.InvariantCulture))"
            hidden />
+    <input name="returnDate"
+           value="@(_returnDate?
+                        .ToString("yyyy-MM-dd",
+                            System.Globalization.CultureInfo.InvariantCulture))"
+           hidden />
 </MudHtmlForm>
 
 @code {
@@ -193,9 +196,37 @@
     private Airport? _fromAirport;
     private Airport? _toAirport;
     private DateTime? _date;
+    private DateTime? _returnDate;
 
     [Parameter]
     public bool IsComponent { get; set; } = true;
+
+    [Parameter]
+    public string? InitialFrom { get; init; }
+
+    [Parameter]
+    public string? InitialTo { get; init; }
+
+    [Parameter]
+    public DateTime? InitialDate { get; init; }
+
+    [Parameter]
+    public DateTime? InitialReturnDate { get; init; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_airports is null)
+        {
+            _airports = await BookingsService.GetAirportsAsync().ToListAsync();
+            _fromAirport = _airports.SingleOrDefault(a => a.Id == InitialFrom);
+            _toAirport = _airports.SingleOrDefault(a => a.Id == InitialTo);
+            _date = InitialDate;
+            _returnDate = InitialReturnDate;
+            StateHasChanged();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
 
     private async Task<IEnumerable<Airport>> GetAirports(string? hint, Airport? exclude)
     {
