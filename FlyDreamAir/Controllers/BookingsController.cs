@@ -24,13 +24,13 @@ public class BookingsController: ControllerBase
     }
 
     [HttpGet(nameof(GetAirports))]
-    public async Task<ActionResult<IList<Airport>>> GetAirports()
+    public ActionResult<IAsyncEnumerable<Airport>> GetAirports()
     {
-        return await _airportsService.GetAirportsAsync().ToListAsync();
+        return Ok(_airportsService.GetAirportsAsync());
     }
 
     [HttpGet(nameof(GetJourneys))]
-    public async Task<ActionResult<IList<Journey>>> GetJourneys(
+    public ActionResult<IAsyncEnumerable<Journey>> GetJourneys(
         [FromQuery]
         string from,
         [FromQuery]
@@ -41,16 +41,6 @@ public class BookingsController: ControllerBase
         DateTime? returnDate
     )
     {
-        try
-        {
-            return await _flightsService.GetJourneysAsync(from, to, date, returnDate)
-                .OrderBy(j => j.BaseCost)
-                .ThenBy(j => j.Flights.Count + j.ReturnFlights.Count)
-                .ToListAsync();
-        }
-        catch
-        {
-            return BadRequest();
-        }
+        return Ok(_flightsService.GetJourneysAsync(from, to, date, returnDate));
     }
 }

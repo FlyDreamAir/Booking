@@ -1,4 +1,4 @@
-﻿using Model = FlyDreamAir.Data.Model;
+using Model = FlyDreamAir.Data.Model;
 using FlyDreamAir.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,12 +29,12 @@ public class FlightsService
     {
         if (date < DateTime.UtcNow)
         {
-            throw new InvalidOperationException();
+            yield break;
         }
 
         if (returnDate.HasValue && returnDate <= date)
         {
-            throw new InvalidOperationException();
+            yield break;
         }
 
         var isTwoWay = returnDate.HasValue;
