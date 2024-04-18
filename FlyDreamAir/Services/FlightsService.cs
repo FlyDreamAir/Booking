@@ -6,6 +6,8 @@ namespace FlyDreamAir.Services;
 
 public class FlightsService
 {
+    private const int MAX_CONNECTING_FLIGHTS = 4;
+
     private readonly AirportsService _airportsService;
     private readonly ApplicationDbContext _dbContext;
 
@@ -21,13 +23,21 @@ public class FlightsService
     public async IAsyncEnumerable<Model.Journey> GetJourneysAsync(
         string fromCode,
         string toCode,
-        DateTime date
+        DateTime date,
+        DateTime? returnDate
     )
     {
-        if (date < DateTime.Now)
+        if (date < DateTime.UtcNow)
         {
-            yield break;
+            throw new InvalidOperationException();
         }
+
+        if (returnDate.HasValue && returnDate <= date)
+        {
+            throw new InvalidOperationException();
+        }
+
+        var isTwoWay = returnDate.HasValue;
 
         var fromAirport = await _airportsService.GetAirportAsync(fromCode);
         var toAirport = await _airportsService.GetAirportAsync(toCode);
@@ -37,34 +47,122 @@ public class FlightsService
             yield break;
         }
 
-        var scheduledFlights = _dbContext.ScheduledFlights.Include(sf => sf.Flight)
-            .Where(sf => sf.DepartureTime >= date
-                    && sf.DepartureTime <= date.AddDays(1)
-                    && sf.Flight.FromAirport == fromCode
-                    && sf.Flight.ToAirport == toCode);
-
-        await foreach (var scheduledFlight in scheduledFlights.ToAsyncEnumerable())
+        await foreach (var journey in FindJourney(
+            fromAirport, date,
+            new(), new(), new(), false
+        ))
         {
-            yield return new()
+            yield return journey;
+        }
+
+        async IAsyncEnumerable<Model.Journey> FindJourney(
+            Model.Airport currentFromAirport,
+            DateTime currentDate,
+            List<Model.Flight> flights,
+            List<Model.Flight> returnFlights,
+            HashSet<string> excludedAirports,
+            bool isReturn
+        )
+        {
+            Model.Journey ConstructJourney()
             {
-                From = fromAirport,
-                To = toAirport,
-                BaseCost = scheduledFlight.Flight.BaseCost,
-                IsTwoWay = false,
-                EstimatedTime = scheduledFlight.Flight.EstimatedTime,
-                Flights = [
-                    new()
+                TimeSpan GetEstimatedTime(List<Model.Flight> flights)
+                {
+                    if (!flights.Any())
                     {
-                        FlightId = scheduledFlight.Flight.FlightId,
-                        From = fromAirport,
-                        To = toAirport,
-                        EstimatedTime = scheduledFlight.Flight.EstimatedTime,
-                        DepartureTime = scheduledFlight.DepartureTime
+                        return default;
                     }
-                ],
-                ReturnEstimatedTime = TimeSpan.Zero,
-                ReturnFlights = []
-            };
+                    return flights.Last().DepartureTime + flights.Last().EstimatedTime
+                        - flights.First().DepartureTime;
+                }
+
+                return new()
+                {
+                    From = fromAirport!,
+                    To = toAirport!,
+                    BaseCost = flights.Concat(returnFlights).Sum(f => f.BaseCost),
+                    IsTwoWay = isTwoWay,
+                    EstimatedTime = GetEstimatedTime(flights),
+                    ReturnEstimatedTime = GetEstimatedTime(returnFlights),
+                    // Be sure to clone these lists!
+                    Flights = new(flights),
+                    ReturnFlights = new(returnFlights)
+                };
+            }
+
+            var currentDestination = isReturn ? fromAirport! : toAirport!;
+            var currentFlightsList = isReturn ? returnFlights : flights;
+            var level = isReturn ? returnFlights.Count : flights.Count;
+            if (level >= MAX_CONNECTING_FLIGHTS)
+            {
+                yield break;
+            }
+
+            excludedAirports.Add(currentFromAirport.Id);
+
+            var scheduledFlights = _dbContext.ScheduledFlights.Include(sf => sf.Flight)
+                .Where(sf => sf.DepartureTime >= currentDate
+                        && sf.DepartureTime <= currentDate.AddDays(1)
+                        && sf.Flight.FromAirport == currentFromAirport.Id
+                        && !excludedAirports.Contains(sf.Flight.ToAirport));
+
+            foreach (var scheduledFlight in await scheduledFlights.ToListAsync())
+            {
+                var currentToAirport = await _airportsService
+                    .GetAirportAsync(scheduledFlight.Flight.ToAirport);
+
+                if (currentToAirport is null)
+                {
+                    continue;
+                }
+
+                var currentArrivalDate = scheduledFlight.DepartureTime
+                    + scheduledFlight.Flight.EstimatedTime;
+
+                currentFlightsList.Add(new()
+                {
+                    FlightId = scheduledFlight.Flight.FlightId,
+                    From = currentFromAirport,
+                    To = currentToAirport,
+                    EstimatedTime = scheduledFlight.Flight.EstimatedTime,
+                    DepartureTime = scheduledFlight.DepartureTime,
+                    BaseCost = scheduledFlight.Flight.BaseCost,
+                });
+
+                IAsyncEnumerable<Model.Journey>? enumerable = null;
+
+                if (scheduledFlight.Flight.ToAirport == currentDestination.Id)
+                {
+                    if (isTwoWay && !isReturn)
+                    {
+                        enumerable = FindJourney(
+                            currentToAirport, currentArrivalDate,
+                            flights, returnFlights, new(), true);
+                    }
+                    else
+                    {
+                        yield return ConstructJourney();
+                    }
+                }
+                else
+                {
+                    enumerable = FindJourney(
+                        currentToAirport, currentArrivalDate,
+                        flights, returnFlights, excludedAirports, isReturn);
+                }
+
+                if (enumerable is not null)
+                {
+                    await foreach (var journey in enumerable)
+                    {
+                        yield return journey;
+                    }
+                }
+
+                currentFlightsList.RemoveAt(currentFlightsList.Count - 1);
+            }
+
+            excludedAirports.Remove(currentFromAirport.Id);
         }
     }
 }

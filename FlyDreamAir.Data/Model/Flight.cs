@@ -11,4 +11,5 @@ public class Flight
     public required TimeSpan EstimatedTime { get; set; }
 
     public required DateTime DepartureTime { get; set; }
+    public required decimal BaseCost { get; set; }
 }

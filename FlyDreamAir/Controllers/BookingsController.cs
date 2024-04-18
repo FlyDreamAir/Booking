@@ -36,9 +36,21 @@ public class BookingsController: ControllerBase
         [FromQuery]
         string to,
         [FromQuery]
-        DateTime date
+        DateTime date,
+        [FromQuery]
+        DateTime? returnDate
     )
     {
-        return await _flightsService.GetJourneysAsync(from, to, date).ToListAsync();
+        try
+        {
+            return await _flightsService.GetJourneysAsync(from, to, date, returnDate)
+                .OrderBy(j => j.BaseCost)
+                .ThenBy(j => j.Flights.Count + j.ReturnFlights.Count)
+                .ToListAsync();
+        }
+        catch
+        {
+            return BadRequest();
+        }
     }
 }
