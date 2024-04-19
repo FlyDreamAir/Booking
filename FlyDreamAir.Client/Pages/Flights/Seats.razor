@@ -1,0 +1,17 @@
+﻿@page "/Flights/Seats"
+
+<PageTitle>Select seat</PageTitle>
+
+@code {
+    [SupplyParameterFromQuery(Name = "flightId")]
+    public required string[] FlightIds { get; init; } = [];
+
+    [SupplyParameterFromQuery(Name = "flightDeparture")]
+    public required DateTime[] FlightDepartures { get; init; } = [];
+
+    [SupplyParameterFromQuery]
+    public required int FlightIndex { get; init; }
+
+    [SupplyParameterFromQuery(Name = "addOnId")]
+    public string[] AddOnIds { get; init; } = [];
+}

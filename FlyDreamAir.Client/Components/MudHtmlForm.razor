@@ -1,7 +1,7 @@
 ﻿@using Microsoft.AspNetCore.WebUtilities;
 @inject IJSRuntime JSRuntime
 
-<MudForm @ref="_form">
+<MudForm @ref="_form" Style="@Style">
     @{
         var method = Enum.GetName(Method)?.ToLowerInvariant() ?? "get";
         var action = QueryHelpers.AddQueryString(Action ?? "/", ActionQueries?.Select(kvp =>
@@ -35,6 +35,9 @@
 
     [Parameter]
     public Dictionary<string, object?>? ActionQueries { get; set; }
+
+    [Parameter]
+    public string? Style { get; set; }
 
     public async Task Submit()
     {

@@ -21,24 +21,25 @@
                         </MudText>
                     </MudStack>
                 }
-                <MudList @bind-SelectedValue="_selected"
-                            Clickable="true"
-                            DisableGutters="true"
-                            DisablePadding="true">
+                <MudList SelectedValueChanged="@((obj) =>
+                            SearchResultsList_SelectedValueChanged(obj, isMobile))"
+                         Clickable="true"
+                         DisableGutters="true"
+                         DisablePadding="true">
                     @foreach (var journey in _journeys)
-                {
-                    <MudListItem Value="journey" DisableRipple="true">
-                        <JourneyView Journey="@journey"
-                                        BadgeVisible="@(journey.BaseCost
+                    {
+                        <MudListItem Value="journey" DisableRipple="true">
+                            <JourneyView Journey="@journey"
+                                         BadgeVisible="@(journey.BaseCost
                                             == _journeys.First().BaseCost)"
-                                        BadgeColor="@Color.Success"
-                                        IsSelected="@(journey == _selected)">
-                            <Badge>
-                                <MudText>Cheapest</MudText>
-                            </Badge>
-                        </JourneyView>
-                    </MudListItem>
-                }
+                                         BadgeColor="@Color.Success"
+                                         IsSelected="@(journey == _selected)">
+                                <Badge>
+                                    <MudText>Cheapest</MudText>
+                                </Badge>
+                            </JourneyView>
+                        </MudListItem>
+                    }
                 </MudList>
             }
             else
@@ -67,9 +68,11 @@
                 <SummaryView Journey="@_selectedJourney" />
                 <MudButton Variant="@Variant.Filled"
                            Color="@Color.Primary"
-                           ButtonType="@ButtonType.Submit"
                            Style="border-radius: 100px; min-width: 33%;"
-                           Disabled="@(_selectedJourney is null)">
+                           Disabled="@(_selectedJourney is null)"
+                           OnClick="@(async () => {
+                               if (_form is not null) await _form.Submit();
+                           })">
                     Next
                 </MudButton>
             </MudStack>
@@ -90,11 +93,29 @@
     </Mobile>
 </DeviceView>
 
+@if (_selectedJourney is not null)
+{
+    <MudHtmlForm Action="/Flights/Seats"
+                 Method="@HtmlFormMethod.Get"
+                 Style="display: none;"
+                 @ref="_form">
+        @foreach (var flight in _selectedJourney.Flights.Concat(_selectedJourney.ReturnFlights))
+        {
+            <input name="flightId" value="@flight.FlightId" />
+            <input name="flightDeparture" value="@flight.DepartureTime" />
+        }
+        <input name="flightIndex" value="0" />
+    </MudHtmlForm>
+}
+
 @code {
     private List<Journey>? _journeys;
 
     private object? _selected;
     private Journey? _selectedJourney => _selected as Journey;
+
+    private MudHtmlForm? _form;
+    private bool _shouldSubmitForm = false;
 
     [SupplyParameterFromQuery]
     public required string From { get; set; }
@@ -128,7 +149,22 @@
             StateHasChanged();
         }
 
+        if (_form is not null && _shouldSubmitForm)
+        {
+            await _form.Submit();
+        }
+
         await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private void SearchResultsList_SelectedValueChanged(object obj, bool isMobile)
+    {
+        _selected = obj;
+        if (isMobile)
+        {
+            _shouldSubmitForm = true;
+        }
+        StateHasChanged();
     }
 
     private void ButtonSearch_Click()
