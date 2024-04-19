@@ -1,0 +1,121 @@
+﻿@using FlyDreamAir.Data.Model
+
+@{
+    const string mudPaperStyle = @"
+        border-radius: 10px;
+        background-color: var(--mud-palette-background-grey);
+        padding: 1rem;
+        position: relative;
+    ";
+
+    RenderFragment logo =
+        @<MudImage Src="assets/logo_small.png" />;
+
+    RenderFragment<bool> cost = (isMobile) =>
+        @<MudText Typo="@(isMobile ? Typo.h5 : Typo.h6)" Align="@Align.Center">
+            <b>$@Journey.BaseCost</b>
+        </MudText>;
+
+    RenderFragment time =
+        @<MudStack Row="true"
+                   Justify="@Justify.SpaceAround"
+                   AlignItems="@AlignItems.Center"
+                   Style="width: 100%;">
+            <MudStack Spacing="1">
+                <MudText Align="Align.Center">
+                    <b>
+                        @(Journey.GetDepartureTime().TimeOfDay
+                        .ToString("hh':'mm"))
+                    </b>
+                </MudText>
+                <MudDivider Style="visibility: hidden;" />
+                <MudText Align="Align.Center">
+                    @Journey.From.Id
+                </MudText>
+            </MudStack>
+            <MudStack Spacing="1" Style="width: 100%;">
+                <MudText Align="Align.Center">
+                    @((int)Journey.EstimatedTime.TotalHours)h
+                    @(Journey.EstimatedTime.Minutes)m
+                </MudText>
+                <MudDivider Style="height: 2px;" />
+                <MudText Align="Align.Center">
+                    @if (Journey.Flights.Count == 1)
+                    {
+                        <span>Direct</span>
+                    }
+                    else if (Journey.Flights.Count == 2)
+                    {
+                        <span>1 stop</span>
+                    }
+                    else
+                    {
+                        <span>@(Journey.Flights.Count - 1) stops</span>
+                    }
+                </MudText>
+            </MudStack>
+            <MudStack Spacing="1">
+                <MudText Align="Align.Center">
+                    <b>
+                        @(Journey.GetArrivalTime().TimeOfDay
+                        .ToString("hh':'mm"))
+                    </b>
+                </MudText>
+                <MudDivider Style="visibility: hidden;" />
+                <MudText Align="Align.Center">
+                    @Journey.To.Id
+                </MudText>
+            </MudStack>
+        </MudStack>;
+}
+
+<MudPaper Style="@mudPaperStyle"
+            Elevation="@(IsSelected ? 0 : 2)">
+    @if (BadgeVisible)
+    {
+        <MudChip Color="@BadgeColor"
+                    Style="position: absolute; top: -1rem; left: 2rem;">
+            @Badge
+        </MudChip>
+    }
+    <DeviceView>
+        <Desktop>
+            <MudStack Row="true"
+                      Justify="@Justify.SpaceAround"
+                      AlignItems="@AlignItems.Center"
+                      Spacing="5">
+                @logo
+                @time
+                @cost(false)
+            </MudStack>
+        </Desktop>
+        <Mobile>
+            <MudStack Style="padding: 0.5rem">
+                <MudStack Row="true"
+                          Justify="@Justify.SpaceBetween">
+                    @cost(true)
+                    @logo
+                </MudStack>
+                @time
+            </MudStack>
+        </Mobile>
+    </DeviceView>
+</MudPaper>
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public required Journey Journey { get; init; }
+
+    [Parameter]
+    public bool BadgeVisible { get; set; }
+
+    [Parameter]
+    public Color BadgeColor { get; set; }
+
+    [Parameter]
+    public RenderFragment? Badge { get; set; }
+
+    [Parameter]
+    public bool IsSelected { get; set; }
+}
