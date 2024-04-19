@@ -29,6 +29,20 @@ public class BookingsController: ControllerBase
         return Ok(_airportsService.GetAirportsAsync());
     }
 
+    [HttpGet(nameof(GetAirport))]
+    public async Task<ActionResult<Airport>> GetAirport(
+        [FromQuery]
+        string id
+    )
+    {
+        var airport = await _airportsService.GetAirportAsync(id);
+        if (airport is not null)
+        {
+            return Ok(airport);
+        }
+        return NotFound();
+    }
+
     [HttpGet(nameof(GetJourneys))]
     public ActionResult<IAsyncEnumerable<Journey>> GetJourneys(
         [FromQuery]
@@ -36,9 +50,9 @@ public class BookingsController: ControllerBase
         [FromQuery]
         string to,
         [FromQuery]
-        DateTime date,
+        DateTimeOffset date,
         [FromQuery]
-        DateTime? returnDate
+        DateTimeOffset? returnDate
     )
     {
         return Ok(_flightsService.GetJourneysAsync(from, to, date, returnDate));

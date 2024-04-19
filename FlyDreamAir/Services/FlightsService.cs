@@ -23,11 +23,11 @@ public class FlightsService
     public async IAsyncEnumerable<Model.Journey> GetJourneysAsync(
         string fromCode,
         string toCode,
-        DateTime date,
-        DateTime? returnDate
+        DateTimeOffset date,
+        DateTimeOffset? returnDate
     )
     {
-        if (date < DateTime.UtcNow)
+        if (date < DateTimeOffset.UtcNow)
         {
             yield break;
         }
@@ -60,7 +60,7 @@ public class FlightsService
 
         async IAsyncEnumerable<Model.Journey> FindJourney(
             Model.Airport currentFromAirport,
-            DateTime currentDate,
+            DateTimeOffset currentDate,
             List<Model.Flight> flights,
             List<Model.Flight> returnFlights,
             HashSet<string> excludedAirports,
