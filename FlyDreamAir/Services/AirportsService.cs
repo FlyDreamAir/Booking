@@ -18,35 +18,40 @@ public class AirportsService
             Id = "SYD",
             City = "Sydney",
             Country = "Australia",
-            Name = "Sydney Kingsford Smith Airport"
+            Name = "Sydney Kingsford Smith Airport",
+            TimeZone = "Australia/Sydney"
         },
         new()
         {
             Id = "MEL",
             City = "Melbourne",
             Country = "Australia",
-            Name = "Melbourne Airport"
+            Name = "Melbourne Airport",
+            TimeZone = "Australia/Melbourne"
         },
         new()
         {
             Id = "HAN",
             City = "Hanoi",
             Country = "Vietnam",
-            Name = "Noi Bai International Airport"
+            Name = "Noi Bai International Airport",
+            TimeZone = "Asia/Ho_Chi_Minh"
         },
         new()
         {
             Id = "SGN",
             City = "Ho Chi Minh City",
             Country = "Vietnam",
-            Name = "Tan Son Nhat International Airport"
+            Name = "Tan Son Nhat International Airport",
+            TimeZone = "Asia/Ho_Chi_Minh"
         },
         new()
         {
             Id = "HND",
             City = "Tokyo",
             Country = "Japan",
-            Name = "Haneda Airport"
+            Name = "Haneda Airport",
+            TimeZone = "Asia/Tokyo"
         }
     ];
 

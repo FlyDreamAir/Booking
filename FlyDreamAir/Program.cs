@@ -1,6 +1,7 @@
 using FlyDreamAir.Components;
 using FlyDreamAir.Components.Account;
 using FlyDreamAir.Data;
+using FlyDreamAir.Data.Seeders;
 using FlyDreamAir.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -53,6 +54,7 @@ builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityPostmarkEma
 builder.Services.AddControllers();
 
 builder.Services.AddScoped<AirportsService>();
+builder.Services.AddScoped<FlightsService>();
 
 builder.Services
     .AddEndpointsApiExplorer()
@@ -67,6 +69,8 @@ if (app.Environment.IsDevelopment())
     app.UseMigrationsEndPoint();
     app.UseSwagger();
     app.UseSwaggerUI();
+
+    await app.SeedBookingData();
 }
 else
 {

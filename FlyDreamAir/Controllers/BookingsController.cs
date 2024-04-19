@@ -11,18 +11,50 @@ public class BookingsController: ControllerBase
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly AirportsService _airportsService;
+    private readonly FlightsService _flightsService;
 
     public BookingsController(
         DbContextOptions<ApplicationDbContext> dbContextOptions,
-        AirportsService airportsService)
+        AirportsService airportsService,
+        FlightsService flightsService)
     {
         _dbContext = new(dbContextOptions);
         _airportsService = airportsService;
+        _flightsService = flightsService;
     }
 
-    [HttpGet("airports")]
-    public async Task<ActionResult<IList<Airport>>> GetAirports()
+    [HttpGet(nameof(GetAirports))]
+    public ActionResult<IAsyncEnumerable<Airport>> GetAirports()
     {
-        return await _airportsService.GetAirportsAsync().ToListAsync();
+        return Ok(_airportsService.GetAirportsAsync());
+    }
+
+    [HttpGet(nameof(GetAirport))]
+    public async Task<ActionResult<Airport>> GetAirport(
+        [FromQuery]
+        string id
+    )
+    {
+        var airport = await _airportsService.GetAirportAsync(id);
+        if (airport is not null)
+        {
+            return Ok(airport);
+        }
+        return NotFound();
+    }
+
+    [HttpGet(nameof(GetJourneys))]
+    public ActionResult<IAsyncEnumerable<Journey>> GetJourneys(
+        [FromQuery]
+        string from,
+        [FromQuery]
+        string to,
+        [FromQuery]
+        DateTimeOffset date,
+        [FromQuery]
+        DateTimeOffset? returnDate
+    )
+    {
+        return Ok(_flightsService.GetJourneysAsync(from, to, date, returnDate));
     }
 }

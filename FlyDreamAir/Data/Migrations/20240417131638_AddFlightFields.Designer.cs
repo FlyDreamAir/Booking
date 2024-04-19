@@ -3,6 +3,7 @@ using System;
 using FlyDreamAir.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FlyDreamAir.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240417131638_AddFlightFields")]
+    partial class AddFlightFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -240,19 +243,6 @@ namespace FlyDreamAir.Data.Migrations
                     b.UseTphMappingStrategy();
                 });
 
-            modelBuilder.Entity("FlyDreamAir.Data.Db.ScheduledFlight", b =>
-                {
-                    b.Property<Guid>("FlightId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("DepartureTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("FlightId", "DepartureTime");
-
-                    b.ToTable("ScheduledFlights");
-                });
-
             modelBuilder.Entity("FlyDreamAir.Data.Db.Ticket", b =>
                 {
                     b.Property<Guid>("Id")
@@ -262,7 +252,7 @@ namespace FlyDreamAir.Data.Migrations
                     b.Property<Guid>("BookingId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("FlightDepartureTime")
+                    b.Property<DateTime>("DepartureTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("FlightId")
@@ -288,7 +278,7 @@ namespace FlyDreamAir.Data.Migrations
 
                     b.HasIndex("BookingId");
 
-                    b.HasIndex("FlightId", "FlightDepartureTime");
+                    b.HasIndex("FlightId");
 
                     b.ToTable("Tickets");
                 });
@@ -481,17 +471,6 @@ namespace FlyDreamAir.Data.Migrations
                     b.Navigation("Booking");
                 });
 
-            modelBuilder.Entity("FlyDreamAir.Data.Db.ScheduledFlight", b =>
-                {
-                    b.HasOne("FlyDreamAir.Data.Db.Flight", "Flight")
-                        .WithMany()
-                        .HasForeignKey("FlightId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Flight");
-                });
-
             modelBuilder.Entity("FlyDreamAir.Data.Db.Ticket", b =>
                 {
                     b.HasOne("FlyDreamAir.Data.Db.Booking", "Booking")
@@ -500,9 +479,9 @@ namespace FlyDreamAir.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("FlyDreamAir.Data.Db.ScheduledFlight", "Flight")
+                    b.HasOne("FlyDreamAir.Data.Db.Flight", "Flight")
                         .WithMany()
-                        .HasForeignKey("FlightId", "FlightDepartureTime")
+                        .HasForeignKey("FlightId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
