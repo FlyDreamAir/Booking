@@ -20,6 +20,43 @@ public class FlightsService
         _dbContext = new(dbContextOptions);
     }
 
+    public async Task<Model.Flight?> GetFlightAsync(
+        string flightId,
+        DateTimeOffset departureTime,
+        bool searchPast
+    )
+    {
+        departureTime = departureTime.ToUniversalTime();
+
+        if (searchPast && departureTime < DateTimeOffset.UtcNow)
+        {
+            return null;
+        }
+
+        var scheduledFlight = await _dbContext.ScheduledFlights.Include(sf => sf.Flight)
+            .FirstOrDefaultAsync(sf =>
+                sf.Flight.FlightId == flightId && sf.DepartureTime == departureTime);
+
+        if (scheduledFlight is not null)
+        {
+            return new Model.Flight()
+            {
+                FlightId = scheduledFlight.Flight.FlightId,
+                From = await _airportsService.GetAirportAsync(scheduledFlight.Flight.FromAirport)
+                    ?? throw new InvalidOperationException("Invalid from airport"),
+                To = await _airportsService.GetAirportAsync(scheduledFlight.Flight.ToAirport)
+                    ?? throw new InvalidOperationException("Invalid to airport"),
+                BaseCost = scheduledFlight.Flight.BaseCost,
+                DepartureTime = scheduledFlight.DepartureTime,
+                EstimatedTime = scheduledFlight.Flight.EstimatedTime
+            };
+        }
+        else
+        {
+            return null;
+        }
+    }
+
     public async IAsyncEnumerable<Model.Journey> GetJourneysAsync(
         string fromCode,
         string toCode,

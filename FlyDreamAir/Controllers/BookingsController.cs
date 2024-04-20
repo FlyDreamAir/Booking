@@ -10,15 +10,18 @@ namespace FlyDreamAir.Controllers;
 public class BookingsController: ControllerBase
 {
     private readonly ApplicationDbContext _dbContext;
+    private readonly AddOnService _addOnService;
     private readonly AirportsService _airportsService;
     private readonly FlightsService _flightsService;
 
     public BookingsController(
         DbContextOptions<ApplicationDbContext> dbContextOptions,
+        AddOnService addOnService,
         AirportsService airportsService,
         FlightsService flightsService)
     {
         _dbContext = new(dbContextOptions);
+        _addOnService = addOnService;
         _airportsService = airportsService;
         _flightsService = flightsService;
     }
@@ -43,6 +46,22 @@ public class BookingsController: ControllerBase
         return NotFound();
     }
 
+    [HttpGet(nameof(GetFlight))]
+    public async Task<ActionResult<Flight>> GetFlight(
+        [FromQuery]
+        string flightId,
+        [FromQuery]
+        DateTimeOffset departureTime,
+        [FromQuery]
+        bool? searchPast
+    )
+    {
+        var flight = await _flightsService.GetFlightAsync(
+            flightId, departureTime, searchPast ?? false
+        );
+        return (flight is not null) ? Ok(flight) : NotFound();
+    }
+
     [HttpGet(nameof(GetJourneys))]
     public ActionResult<IAsyncEnumerable<Journey>> GetJourneys(
         [FromQuery]
@@ -56,5 +75,18 @@ public class BookingsController: ControllerBase
     )
     {
         return Ok(_flightsService.GetJourneysAsync(from, to, date, returnDate));
+    }
+
+    [HttpGet(nameof(GetSeats))]
+    public ActionResult<IAsyncEnumerable<Seat>> GetSeats(
+        [FromQuery]
+        string flightId,
+        [FromQuery]
+        DateTimeOffset departureTime,
+        [FromQuery]
+        SeatType? seatType
+    )
+    {
+        return Ok(_addOnService.GetSeatsAsync(flightId, departureTime, seatType));
     }
 }
