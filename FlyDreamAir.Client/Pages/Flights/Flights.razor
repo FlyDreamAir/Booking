@@ -99,6 +99,10 @@
                  Method="@HtmlFormMethod.Get"
                  Style="display: none;"
                  @ref="_form">
+        <input name="from" value="@From" />
+        <input name="to" value="@To" />
+        <input name="date" value="@Date" />
+        <input name="returnDate" value="@ReturnDate" />
         @foreach (var flight in _selectedJourney.Flights.Concat(_selectedJourney.ReturnFlights))
         {
             <input name="flightId" value="@flight.FlightId" />

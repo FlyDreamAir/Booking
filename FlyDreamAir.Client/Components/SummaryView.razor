@@ -24,10 +24,20 @@
                 <MudStack Spacing="1" AlignItems="@AlignItems.Start">
                     @if (Journey is not null)
                     {
-                        foreach (var flight in Journey.Flights)
+                        for (int i = 0; i < Journey.Flights.Count; ++i)
                         {
+                            var flight = Journey.Flights[i];
+                            // Capture the current value for the children.
+                            var currentFlightIndex = i;
                             <MudText Style="overflow: hidden; white-space: nowrap;">
-                                <b>@flight.FlightId</b>
+                                @if (FlightIndex.HasValue && currentFlightIndex != FlightIndex)
+                                {
+                                    @flight.FlightId
+                                }
+                                else
+                                {
+                                    <b>@flight.FlightId</b>
+                                }
                                 (@flight.From.Id -> @flight.To.Id)
                             </MudText>
                         }
@@ -92,4 +102,7 @@
 @code {
     [Parameter]
     public Journey? Journey { get; set; }
+
+    [Parameter]
+    public int? FlightIndex { get; set; }
 }
