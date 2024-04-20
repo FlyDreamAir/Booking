@@ -91,6 +91,9 @@
                         </AuthorizeView>
                     </MudStack>
                 </MudAppBar>
+                <MudMainContent>
+                    @Body
+                </MudMainContent>
             </Desktop>
             <Mobile>
                 <MudDrawer @bind-Open="@_popoverLogoutOpen"
@@ -163,11 +166,11 @@
                 {
                     <MudAppBar Style="background-color: var(--mud-palette-surface)" Elevation="0" />
                 }
+                <MudMainContent Style="padding-bottom: var(--mud-appbar-height);">
+                    @Body
+                </MudMainContent>
             </Mobile>
         </DeviceView>
-        <MudMainContent>
-            @Body
-        </MudMainContent>
     </MudLayout>
 </div>
 
