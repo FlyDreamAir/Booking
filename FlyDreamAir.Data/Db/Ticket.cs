@@ -25,5 +25,5 @@ public class Ticket
     public required string HolderLastName { get; set; }
 
     [Required]
-    public required string Seat { get; set; }
+    public required Seat Seat { get; set; }
 }

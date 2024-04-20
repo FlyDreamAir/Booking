@@ -79,6 +79,7 @@ namespace FlyDreamAir.Data
             {
                 b.HasOne(e => e.Booking).WithMany();
                 b.HasOne(e => e.Flight).WithMany();
+                b.HasOne(e => e.Seat).WithMany();
             });
         }
     }
