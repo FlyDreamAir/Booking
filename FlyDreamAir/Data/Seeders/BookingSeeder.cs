@@ -1,4 +1,5 @@
 ﻿using FlyDreamAir.Data.Db;
+using FlyDreamAir.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace FlyDreamAir.Data.Seeders;
@@ -75,6 +76,7 @@ public static class BookingSeeder
         params TimeOnly[] departureTimes
     )
     {
+        // The flight itself.
         var flight = await dbContext.Flights.FirstOrDefaultAsync(f => f.FlightId == flightId);
 
         if (flight is null)
@@ -98,22 +100,151 @@ public static class BookingSeeder
 
         dbContext.Update(flight);
 
+        // Departure times.
+        var airportService = new AirportsService();
+        var departureAirport = await airportService.GetAirportAsync(fromAirport)
+            ?? throw new ArgumentException("Bad airport", nameof(fromAirport));
+        var departureTimeZone = TimeZoneInfo.FindSystemTimeZoneById(departureAirport.TimeZone);
+
         foreach (var departureTime in departureTimes)
         {
-            var schedule = (DateTime.Now.Date + departureTime.ToTimeSpan()).ToUniversalTime();
+            var schedule = TimeZoneInfo.ConvertTimeToUtc(
+                TimeZoneInfo.ConvertTime(DateTimeOffset.Now, departureTimeZone).Date
+                    + departureTime.ToTimeSpan(),
+                departureTimeZone
+            );
+
+            var now = DateTime.UtcNow;
+            if (schedule < now)
+            {
+                schedule = schedule.AddDays(1);
+            }
+
+            await dbContext.ScheduledFlights.Include(f => f.Flight)
+                .Where(f => f.Flight.FlightId == flightId && f.DepartureTime >= now)
+                .ExecuteDeleteAsync();
 
             for (int i = 0; i < 10; ++i)
             {
                 var current = schedule.AddDays(i);
-                var scheduledFlight = await dbContext.ScheduledFlights
-                    .FirstOrDefaultAsync(f => f.DepartureTime == current);
-                if (scheduledFlight is null)
+                // ExecuteDeleteAsync above should have nuked all relevant entities.
+                dbContext.Entry(new ScheduledFlight()
                 {
-                    dbContext.Add(new ScheduledFlight()
+                    Flight = flight,
+                    DepartureTime = current
+                }).State = EntityState.Added;
+            }
+        }
+
+        // Seat data.
+
+        // 1xxx: Domestic
+        // 2xxx: International
+        var isInternational = flightId[3] - '0' > 1;
+
+        // Solution for this:
+        // - Sort everything by rows. Ignore missing rows.
+        // - Sort every row by letters.
+        // - Breakpoints are:
+        //   + Between C and D
+        //   + Between G and H
+        // - Add a flag to domain class to indicate emergency row.
+
+        await dbContext.Seats.Include(s => s.Flight)
+            .ExecuteDeleteAsync();
+
+        var layout = new List<(IEnumerable<int> Rows, string Letters, SeatType Class)>();
+        var exitRows = new HashSet<int>();
+
+        static IEnumerable<int> RangeFromTo(int from, int to)
+        {
+            return Enumerable.Range(from, to - from + 1);
+        }
+
+        if (!isInternational)
+        {
+            // Domestic flights use A320.
+            // Seats layout is always 3/3 - ABC/DEF.
+            // - 4 Business Class rows (1 - 4).
+            // - 5 Premium Class rows (6 - 10).
+            // - 20 Economy Class rows (11 - 12, 14 - 30).
+            // Exit rows are 12 and 14.
+
+            exitRows = new HashSet<int>([12, 14]);
+            layout.Add((
+                RangeFromTo(1, 4),
+                "ABC/DEF",
+                SeatType.Business
+            ));
+            layout.Add((
+                RangeFromTo(6, 10),
+                "ABC/DEF",
+                SeatType.Premium
+            ));
+            layout.Add((
+                RangeFromTo(11, 12).Concat(RangeFromTo(14, 30)),
+                "ABC/DEF",
+                SeatType.Economy
+            ));
+        }
+        else // if (isInternational)
+        {
+            // International flights use A330.
+            // Seats layout includes 2/2/2, 2/4/2, and 2/3/2
+            // - 3 Business Class rows (1 - 3) (2/2/2 - AC/DG/HK).
+            // - 6 Premium Class rows (7 - 12) (2/4/2 - AC/DEFG/HK)
+            // - 20 + 16 Economy Class rows (14 - 33, 36 - 51)
+            // (2/4/2 - AC/DEFG/HK or 2/3/2 - AC/DEG/HK). Second layout is used from row 47.
+            // Exit rows are 14 and 36.
+
+            exitRows = new HashSet<int>([14, 36]);
+            layout.Add((
+                RangeFromTo(1, 3),
+                "AC/DG/HK",
+                SeatType.Business
+            ));
+            layout.Add((
+                RangeFromTo(7, 12),
+                "AC/DEFG/HK",
+                SeatType.Premium
+            ));
+            layout.Add((
+                RangeFromTo(14, 33).Concat(RangeFromTo(36, 46)),
+                "AC/DEFG/HK",
+                SeatType.Economy
+            ));
+            layout.Add((
+                RangeFromTo(47, 51),
+                "AC/DEG/HK",
+                SeatType.Economy
+            ));
+        }
+
+        foreach (var (rows, letters, @class) in layout)
+        {
+            foreach (var row in rows)
+            {
+                foreach (var letter in letters.Where(char.IsAsciiLetter))
+                {
+                    dbContext.Entry(new Seat()
                     {
+                        Name = $"{nameof(Seat)} {row}{letter} - {Enum.GetName(@class)} Class",
+                        Type = nameof(Seat),
+                        Price = decimal.Round(
+                            @class switch
+                            {
+                                SeatType.Economy => 0m,
+                                SeatType.Premium => flight.BaseCost * 0.1m,
+                                SeatType.Business => flight.BaseCost * 1.5m,
+                                _ => throw new InvalidOperationException("Invalid seat type")
+                            }
+                        ),
                         Flight = flight,
-                        DepartureTime = current
-                    });
+                        SeatType = @class,
+                        SeatRow = row,
+                        SeatPosition = letter,
+                        IsEmergencyRow = exitRows.Add(row)
+                    }).State = EntityState.Added;
                 }
             }
         }
