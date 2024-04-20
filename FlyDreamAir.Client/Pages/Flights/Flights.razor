@@ -1,0 +1,187 @@
+﻿@page "/Flights/Flights"
+@using FlyDreamAir.Data.Model
+@inject BookingsService BookingService
+@inject IDialogService Dialog
+
+<PageTitle>Flights</PageTitle>
+
+@{
+    RenderFragment<bool> searchResultsView = (isMobile) =>
+        @<div class="m-2">
+            @if (_journeys is not null)
+            {
+                if (!_journeys.Any())
+                {
+                    <MudStack AlignItems="@AlignItems.Center">
+                        <MudText Typo="@Typo.h6" Align="@Align.Center">
+                            <b>
+                                Sorry, we cannot find any matching flights.
+                                Please try again later.
+                            </b>
+                        </MudText>
+                    </MudStack>
+                }
+                <MudList SelectedValueChanged="@((obj) =>
+                            SearchResultsList_SelectedValueChanged(obj, isMobile))"
+                         Clickable="true"
+                         DisableGutters="true"
+                         DisablePadding="true">
+                    @foreach (var journey in _journeys)
+                    {
+                        <MudListItem Value="journey" DisableRipple="true">
+                            <JourneyView Journey="@journey"
+                                         BadgeVisible="@(journey.BaseCost
+                                            == _journeys.First().BaseCost)"
+                                         BadgeColor="@Color.Success"
+                                         IsSelected="@(journey == _selected)">
+                                <Badge>
+                                    <MudText>Cheapest</MudText>
+                                </Badge>
+                            </JourneyView>
+                        </MudListItem>
+                    }
+                </MudList>
+            }
+            else
+            {
+                <MudStack AlignItems="@AlignItems.Center">
+                    <MudProgressCircular Indeterminate="true" Class="m-5" />
+                </MudStack>
+            }
+        </div>;
+}
+
+<DeviceView>
+    <Desktop>
+        <MudTitle Typo="@Typo.h4"
+                  Align="@Align.Center"
+                  Color="@Color.Primary"
+                  Class="m-3"
+                  Style="user-select: none;" />
+        <MudStack Row="true" Class="m-2" Justify="@Justify.SpaceBetween" Spacing="10">
+            <MudStack Style="width: 100%;">
+                <FlightSearchView InitialFrom="@From" InitialTo="@To"
+                                  InitialDate="@Date" InitialReturnDate="@ReturnDate" />
+                    @searchResultsView(false)
+            </MudStack>
+            <MudStack Style="min-width: 33%;" AlignItems="@AlignItems.End">
+                <SummaryView Journey="@_selectedJourney" />
+                <MudButton Variant="@Variant.Filled"
+                           Color="@Color.Primary"
+                           Style="border-radius: 100px; min-width: 33%;"
+                           Disabled="@(_selectedJourney is null)"
+                           OnClick="@(async () => {
+                               if (_form is not null) await _form.Submit();
+                           })">
+                    Next
+                </MudButton>
+            </MudStack>
+        </MudStack>
+    </Desktop>
+    <Mobile>
+        <MudButton Style="border-radius: 100px; background-color: var(--mud-palette-background-grey); padding: 1rem;"
+                   FullWidth="true"
+                   StartIcon="@Icons.Material.Outlined.Menu"
+                   EndIcon="@Icons.Material.Outlined.Search"
+                   Size="@Size.Large"
+                   OnClick="ButtonSearch_Click">
+            <MudText Style="width: 100%;" Align="@Align.Left">
+                @From, @To
+            </MudText>
+        </MudButton>
+        @searchResultsView(true)
+    </Mobile>
+</DeviceView>
+
+@if (_selectedJourney is not null)
+{
+    <MudHtmlForm Action="/Flights/Seats"
+                 Method="@HtmlFormMethod.Get"
+                 Style="display: none;"
+                 @ref="_form">
+        @foreach (var flight in _selectedJourney.Flights.Concat(_selectedJourney.ReturnFlights))
+        {
+            <input name="flightId" value="@flight.FlightId" />
+            <input name="flightDeparture" value="@flight.DepartureTime" />
+        }
+        <input name="flightIndex" value="0" />
+    </MudHtmlForm>
+}
+
+@code {
+    private List<Journey>? _journeys;
+
+    private object? _selected;
+    private Journey? _selectedJourney => _selected as Journey;
+
+    private MudHtmlForm? _form;
+    private bool _shouldSubmitForm = false;
+
+    [SupplyParameterFromQuery]
+    public required string From { get; set; }
+
+    [SupplyParameterFromQuery]
+    public required string To { get; set; }
+
+    [SupplyParameterFromQuery]
+    public required DateTime Date { get; set; }
+
+    [SupplyParameterFromQuery]
+    public DateTime? ReturnDate { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_journeys is null)
+        {
+            var fromAirport = await BookingService.GetAirportAsync(From);
+            var toAirport = await BookingService.GetAirportAsync(To);
+
+            var localDate = fromAirport.GetLocalDate(Date);
+            var localReturnDate = ReturnDate.HasValue ?
+                toAirport.GetLocalDate(ReturnDate.Value) : (DateTimeOffset?)null;
+
+            _journeys = await BookingService
+                .GetJourneysAsync(From, To, localDate, localReturnDate)
+                .OrderBy(j => j.BaseCost)
+                .ThenBy(j => j.Flights.Count + j.ReturnFlights.Count)
+                .ToListAsync();
+
+            StateHasChanged();
+        }
+
+        if (_form is not null && _shouldSubmitForm)
+        {
+            await _form.Submit();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private void SearchResultsList_SelectedValueChanged(object obj, bool isMobile)
+    {
+        _selected = obj;
+        if (isMobile)
+        {
+            _shouldSubmitForm = true;
+        }
+        StateHasChanged();
+    }
+
+    private void ButtonSearch_Click()
+    {
+        var parameters = new DialogParameters<FlightSearchDialog>();
+        parameters.Add(x => x.InitialFrom, From);
+        parameters.Add(x => x.InitialTo, To);
+        parameters.Add(x => x.InitialDate, Date);
+        parameters.Add(x => x.InitialReturnDate, ReturnDate);
+
+        Dialog.Show<FlightSearchDialog>("Flights", parameters,
+            new DialogOptions()
+            {
+                NoHeader = true,
+                MaxWidth = MaxWidth.Large,
+                FullWidth = true
+            }
+        );
+    }
+}

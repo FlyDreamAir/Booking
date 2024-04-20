@@ -1,0 +1,55 @@
+﻿@using Microsoft.AspNetCore.WebUtilities;
+@inject IJSRuntime JSRuntime
+
+<MudForm @ref="_form" Style="@Style">
+    @{
+        var method = Enum.GetName(Method)?.ToLowerInvariant() ?? "get";
+        var action = QueryHelpers.AddQueryString(Action ?? "/", ActionQueries?.Select(kvp =>
+            new KeyValuePair<string, string?>(
+                kvp.Key,
+                kvp.Value switch
+                {
+                    bool b => b ? "true" : "false",
+                    _ => kvp.Value?.ToString()
+                }
+            )
+        ) ?? []);
+    }
+    <form action="@action" method="@method" @ref="_htmlForm">
+        @ChildContent?.Invoke(this)
+    </form>
+</MudForm>
+
+@code {
+    private ElementReference _htmlForm;
+    private MudForm? _form;
+
+    [Parameter]
+    public RenderFragment<MudHtmlForm>? ChildContent { get; set; }
+
+    [Parameter]
+    public HtmlFormMethod Method { get; set; }
+
+    [Parameter]
+    public string? Action { get; set; }
+
+    [Parameter]
+    public Dictionary<string, object?>? ActionQueries { get; set; }
+
+    [Parameter]
+    public string? Style { get; set; }
+
+    public async Task Submit()
+    {
+        if (_form is not null)
+        {
+            await _form.Validate();
+            if (_form.IsValid)
+            {
+                // TODO: Publish this little piece of hack on the Reality blog.
+                await JSRuntime.InvokeVoidAsync("HTMLFormElement.prototype.submit.call",
+                    _htmlForm);
+            }
+        }
+    }
+}

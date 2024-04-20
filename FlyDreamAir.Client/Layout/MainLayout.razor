@@ -1,0 +1,236 @@
+﻿@inherits LayoutComponentBase
+@inject IDialogService Dialog
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+
+<MudThemeProvider Theme="@FlyDreamAirTheme" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<style>
+    .FlyDreamAir-Nav-Button {
+        border-radius: 100px;
+    }
+</style>
+
+<form method="post"
+      action="api/Account/Logout?returnUrl=@(
+        Uri.EscapeDataString(NavigationManager.Uri))"
+      @ref="_formLogout">
+</form>
+
+@{
+    RenderFragment _navMenuAccount =
+        @<MudNavMenu>
+            <AuthorizeView>
+                <Authorized>
+                    <MudNavLink Icon="@Icons.Material.Outlined.Logout"
+                                OnClick="SignOut">
+                        Sign out
+                    </MudNavLink>
+                </Authorized>
+                <NotAuthorized>
+                    <MudNavLink Href="/Account/Login"
+                                Icon="@Icons.Material.Outlined.Login">
+                        Sign in
+                    </MudNavLink>
+                    <MudNavLink Href="/Account/Register"
+                                Icon="@Icons.Material.Outlined.HowToReg">
+                        Sign up
+                    </MudNavLink>
+                </NotAuthorized>
+            </AuthorizeView>
+        </MudNavMenu>;
+}
+
+<div @onclick="Window_Click">
+    <MudLayout>
+        <DeviceView>
+            <Desktop>
+                <MudAppBar Style="background-color: var(--mud-palette-surface)" Elevation="0">
+                    <a href="/">
+                        <MudImage Src="assets/logo.png"
+                                  Style="max-height: var(--mud-appbar-height)" />
+                    </a>
+                    <MudSpacer />
+                    <MudStack Justify="@Justify.FlexEnd" Row="true">
+                        <MudNavButton Href="/Flights" Class="FlyDreamAir-Nav-Button">
+                            Flights
+                        </MudNavButton>
+                        <MudNavButton Href="/Bookings" Class="FlyDreamAir-Nav-Button">
+                            Bookings
+                        </MudNavButton>
+                        <MudNavButton Href="/Explore" Class="FlyDreamAir-Nav-Button">
+                            Explore
+                        </MudNavButton>
+                        <AuthorizeView>
+                            <Authorized>
+                                <MudButton Variant="@Variant.Outlined"
+                                           EndIcon="@Icons.Material.Filled.AccountCircle"
+                                           Class="FlyDreamAir-Nav-Button"
+                                           OnClick="ButtonAccount_Click">
+                                    @context.User.Identity?.Name
+                                    <MudPopover Open="@_popoverLogoutOpen"
+                                                AnchorOrigin="Origin.BottomLeft">
+                                        @_navMenuAccount
+                                    </MudPopover>
+                                </MudButton>
+                            </Authorized>
+                            <NotAuthorized>
+                                <MudButton Class="FlyDreamAir-Nav-Button"
+                                           OnClick="SignIn">
+                                    Sign in
+                                </MudButton>
+                                <MudButton Href="/Account/Register"
+                                           Variant="Variant.Filled"
+                                           Color="Color.Primary"
+                                           Class="FlyDreamAir-Nav-Button">
+                                    Sign up
+                                </MudButton>
+                            </NotAuthorized>
+                        </AuthorizeView>
+                    </MudStack>
+                </MudAppBar>
+            </Desktop>
+            <Mobile>
+                <MudDrawer @bind-Open="@_popoverLogoutOpen"
+                           Anchor="@Anchor.End">
+                    <MudDrawerHeader>
+                        <MudStack>
+                            <MudImage Src="assets/logo.png"
+                                      Style="max-width: var(--mud-drawer-width-right); width: 95%; display: block; margin-left: auto; margin-right: auto;" />
+                            <AuthorizeView>
+                                <Authorized>
+                                    <MudText>
+                                        Hello, <b>@context.User.Identity?.Name</b>!
+                                    </MudText>
+                                </Authorized>
+                            </AuthorizeView>
+                        </MudStack>
+                    </MudDrawerHeader>
+                    @_navMenuAccount
+                </MudDrawer>
+                @if (!NavigationManager.Uri.Contains("/Account/",
+                        StringComparison.InvariantCultureIgnoreCase))
+                {
+                    <MudAppBar Style="background-color: var(--mud-palette-surface)"
+                               Elevation="0">
+                        @{
+                            // String is empty or query string is right at the start.
+                            // We have a root URL.
+                            if (NavigationManager.ToBaseRelativePath(NavigationManager.Uri)
+                                    .TrimStart('?') == "")
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Menu" />
+                            }
+                            else
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.NavigateBefore"
+                                               OnClick="@(() =>
+                                                    JSRuntime.InvokeVoidAsync("history.back"))" />
+                            }
+
+                            <MudTitle Typo="Typo.h6"
+                                      Class="flex-grow-1 m-0 text-center"
+                                      Style="color: var(--mud-palette-text-primary);" />
+                        }
+                        <MudIconButton Icon="@Icons.Material.Filled.AccountCircle"
+                                       OnClick="ButtonAccount_Click" />
+                    </MudAppBar>
+                    <MudAppBar Bottom="true" Elevation="0">
+                        <MudStack Justify="@Justify.SpaceEvenly" Row="true" class="flex-grow-1">
+                            <MudNavButton Href="/Flights" Class="FlyDreamAir-Nav-Button">
+                                <MudIcon Icon="@Icons.Material.Outlined.Flight" />
+                                <br />
+                                Flights
+                            </MudNavButton>
+                            <MudNavButton Href="/Bookings" Class="FlyDreamAir-Nav-Button">
+                                <MudIcon Icon="@Icons.Material.Outlined.BookOnline" />
+                                <br />
+                                Bookings
+                            </MudNavButton>
+                            <MudNavButton Href="/Explore" Class="FlyDreamAir-Nav-Button">
+                                <MudBadge Dot="true" Overlap="true" Color="Color.Error">
+                                    <MudIcon Icon="@Icons.Material.Outlined.Explore" />
+                                </MudBadge>
+                                <br />
+                                Explore
+                            </MudNavButton>
+                        </MudStack>
+                    </MudAppBar>
+                }
+                else
+                {
+                    <MudAppBar Style="background-color: var(--mud-palette-surface)" Elevation="0" />
+                }
+            </Mobile>
+        </DeviceView>
+        <MudMainContent>
+            @Body
+        </MudMainContent>
+    </MudLayout>
+</div>
+
+@code {
+    private bool _popoverLogoutOpen = false;
+    private ElementReference _formLogout;
+
+    private void ButtonAccount_Click()
+    {
+        _popoverLogoutOpen = !_popoverLogoutOpen;
+        StateHasChanged();
+    }
+
+    private void Window_Click()
+    {
+        if (_popoverLogoutOpen)
+        {
+            _popoverLogoutOpen = false;
+            StateHasChanged();
+        }
+    }
+
+    MudTheme FlyDreamAirTheme = new()
+    {
+        Palette = new PaletteLight()
+        {
+            BackgroundGrey = new("#ECE6F0"),
+            Surface = new("#FEF7FF"),
+            AppbarBackground = new("#E8DEF8"),
+            Primary = new("#6750A4")
+        },
+        LayoutProperties = new LayoutProperties()
+        {
+            AppbarHeight = "72px",
+        },
+        Typography = new Typography()
+        {
+            Button = new Button()
+            {
+                FontSize = "1rem",
+                TextTransform = "none"
+            }
+        }
+    };
+
+    private void SignIn()
+    {
+        Dialog.Show<LoginDialog>("Sign in", new DialogOptions
+        {
+            NoHeader = true,
+            MaxWidth = MaxWidth.ExtraSmall,
+            FullWidth = true
+        });
+    }
+
+    private async void SignOut()
+    {
+        await JSRuntime.InvokeVoidAsync("HTMLFormElement.prototype.submit.call", _formLogout);
+    }
+}
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>

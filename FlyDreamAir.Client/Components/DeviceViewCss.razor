@@ -1,0 +1,35 @@
+﻿<style>
+    .FlyDreamAir-Desktop-Only {
+        display: initial;
+    }
+
+    .FlyDreamAir-Mobile-Only {
+        display: none;
+    }
+
+    @@media only screen and (max-width: 768px) {
+        .FlyDreamAir-Desktop-Only {
+            display: none;
+        }
+
+        .FlyDreamAir-Mobile-Only {
+            display: initial;
+        }
+    }
+</style>
+
+<div class="FlyDreamAir-Desktop-Only">
+    @Desktop
+</div>
+
+<div class="FlyDreamAir-Mobile-Only">
+    @Mobile
+</div>
+
+@code {
+    [Parameter]
+    public RenderFragment? Desktop { get; set; }
+
+    [Parameter]
+    public RenderFragment? Mobile { get; set; }
+}
