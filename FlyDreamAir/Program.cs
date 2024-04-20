@@ -1,4 +1,3 @@
-using ClientServices = FlyDreamAir.Client.Services;
 using FlyDreamAir.Components;
 using FlyDreamAir.Components.Account;
 using FlyDreamAir.Data;
@@ -7,7 +6,6 @@ using FlyDreamAir.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using MudBlazor.Services;
 using PostmarkDotNet;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -58,15 +56,9 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<AirportsService>();
 builder.Services.AddScoped<FlightsService>();
 
-// Hacks for prerendering to work.
-builder.Services.AddScoped(sp => new HttpClient());
-builder.Services.AddScoped<ClientServices.BookingsService>();
-
 builder.Services
     .AddEndpointsApiExplorer()
     .AddSwaggerGen();
-
-builder.Services.AddMudServices();
 
 var app = builder.Build();
 
