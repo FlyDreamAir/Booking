@@ -228,7 +228,9 @@ public static class BookingSeeder
                 {
                     dbContext.Entry(new Seat()
                     {
-                        Name = $"{nameof(Seat)} {row}{letter} - {Enum.GetName(@class)} Class",
+                        Name = $"{nameof(Seat)} {row}{letter} - " +
+                               $"{flight.FlightId} - " +
+                               $"{Enum.GetName(@class)} Class",
                         Type = nameof(Seat),
                         Price = decimal.Round(
                             @class switch
@@ -243,7 +245,7 @@ public static class BookingSeeder
                         SeatType = @class,
                         SeatRow = row,
                         SeatPosition = letter,
-                        IsEmergencyRow = exitRows.Add(row)
+                        IsEmergencyRow = exitRows.Contains(row)
                     }).State = EntityState.Added;
                 }
             }
