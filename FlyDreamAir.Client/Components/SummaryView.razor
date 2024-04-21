@@ -60,16 +60,17 @@
     </MudPaper>
 
     <style>
-        td {
+        .FlyDreamAir-SummaryView-Table td {
             text-align: right;
         }
-        table td:nth-child(2) {
+        .FlyDreamAir-SummaryView-Table td:nth-child(2) {
             width: 4rem;
         }
     </style>
 
     <table style="@($"visibility: {(Journey is null ? "hidden" : "visible")};"
-                  +  "width: 100%;")">
+                  +  "width: 100%;")"
+           class="FlyDreamAir-SummaryView-Table">
         <tbody>
             <tr>
                 <td>
@@ -83,6 +84,24 @@
                     </MudText>
                 </td>
             </tr>
+            @if (AddOns is not null)
+            {
+                foreach (var addOn in AddOns)
+                {
+                    <tr>
+                        <td>
+                            <MudText>
+                                <b>@addOn.Name</b>
+                            </MudText>
+                        </td>
+                        <td>
+                            <MudText>
+                                <b>$@addOn.Price</b>
+                            </MudText>
+                        </td>
+                    </tr>
+                }
+            }
             <tr>
                 <td>
                     <MudText>
@@ -91,7 +110,7 @@
                 </td>
                 <td>
                     <MudText>
-                        <b>$@Journey?.BaseCost</b>
+                        <b>$@((Journey?.BaseCost ?? 0) + (AddOns?.Sum(a => a.Price) ?? 0))</b>
                     </MudText>
                 </td>
             </tr>
@@ -102,6 +121,9 @@
 @code {
     [Parameter]
     public Journey? Journey { get; set; }
+
+    [Parameter]
+    public List<AddOn>? AddOns { get; set; }
 
     [Parameter]
     public int? FlightIndex { get; set; }

@@ -4,6 +4,110 @@
 
 <PageTitle>Select seat</PageTitle>
 
+@{
+    RenderFragment<bool> legend = (isMobile) =>
+        @<MudStack Row="@isMobile">
+            <MudStack Row="true" AlignItems="@AlignItems.Center">
+                <SeatView IsAvailable="false" />
+                <MudText Style="white-space: nowrap">
+                    <b>Unavailable seats</b>
+                </MudText>
+            </MudStack>
+            <MudStack Row="true" AlignItems="@AlignItems.Center">
+                <SeatView IsAvailable="true" />
+                <MudText Style="white-space: nowrap">
+                    <b>Available seats</b>
+                </MudText>
+            </MudStack>
+        </MudStack>;
+
+    RenderFragment<int> divider = (num) =>
+        @<MudText Class="m-2"
+                    Align="@Align.Center"
+                    Style="@($@"
+                        color: var(--mud-palette-grey-light);
+                        width: 1rem;
+                    ")">
+            @num
+        </MudText>;
+
+    RenderFragment seatsView =
+        @<MudStack AlignItems="@AlignItems.Center" Style="width: 100%;">
+            @if (_seats is not null)
+            {
+                <style>
+                    .FlyDreamAir-SeatsView-Table td {
+                        padding-top: 0.5rem;
+                        padding-bottom: 0.5rem;
+                    }
+                </style>
+                <table class="FlyDreamAir-SeatsView-Table">
+                    @foreach (var row in _seats.GroupBy(s => s.SeatRow))
+                    {
+                        var segments = row.GroupBy(s => s.SeatPosition switch
+                        {
+                            var a when a >= 'A' && a <= 'C' => 0,
+                            var b when b >= 'D' && b <= 'G' => 1,
+                            var c when c >= 'H' => 2,
+                            _ => throw new InvalidOperationException(
+                                "Invalid seat position")
+                        });
+                        @if (row.First().IsEmergencyRow)
+                        {
+                            <tr class="m-1">
+                                <td colspan="6">
+                                    <MudText Style="@(@"
+                                                 color: var(--mud-palette-grey-light);
+                                                 text-align: left;
+                                             ")">
+                                    <MudIcon Icon="@Icons.Material.Outlined.Info"
+                                                Size="@Size.Small" />
+                                        Exit row
+                                    </MudText>
+                                </td>
+                            </tr>
+                        }
+                        <tr class="m-1">
+                            @foreach (var (segment, index) in segments
+                                .Select((s, i) => (s, i)))
+                            {
+                                if (index != 0)
+                                {
+                                    <td>@divider(segment.First().SeatRow)</td>
+                                }
+                                <td>
+                                    <MudStack Row="true"
+                                                Spacing="1"
+                                                Justify="@Justify.SpaceAround">
+                                        @foreach (var seat in segment)
+                                        {
+                                            <SeatView Seat="seat"
+                                                      IsSelected="@(seat == _selectedSeat)"
+                                                      OnClick="ChangeSeat" />
+                                        }
+                                    </MudStack>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </table>
+            }
+            else
+            {
+                <MudProgressCircular Indeterminate="true" Class="m-5" />
+            }
+        </MudStack>;
+
+    RenderFragment nextButton =
+        @<MudButton Variant="@Variant.Filled"
+                    Color="@Color.Primary"
+                    Disabled="@(_selectedSeat is null)"
+                    OnClick="async () => { if (_form is not null) await _form.Submit(); }"
+                    Style="border-radius: 100px; min-width: 33%;">
+            Next
+        </MudButton>;
+}
+
 <DeviceView>
     <Desktop>
         <MudTitle Typo="@Typo.h4"
@@ -39,14 +143,14 @@
                     @button(SeatType.Premium)
                     @button(SeatType.Economy)
                 </MudButtonGroup>
+                <MudStack Row="true">
+                    @legend(false)
+                    @seatsView
+                </MudStack>
             </MudStack>
             <MudStack Style="min-width: 33%;" AlignItems="@AlignItems.End">
-                <SummaryView Journey="@_journey" FlightIndex="@FlightIndex" />
-                <MudButton Variant="@Variant.Filled"
-                           Color="@Color.Primary"
-                           Style="border-radius: 100px; min-width: 33%;">
-                    Next
-                </MudButton>
+                <SummaryView Journey="@_journey" AddOns="_addOns" FlightIndex="@FlightIndex" />
+                @nextButton
             </MudStack>
         </MudStack>
     </Desktop>
@@ -64,18 +168,65 @@
                     await RefreshSeats();
                     StateHasChanged();
                  })">
-            <MudTabPanel Text="Business" Style="min-width: 33vw;" />
-            <MudTabPanel Text="Premium" Style="min-width: 33vw;" />
-            <MudTabPanel Text="Economy" Style="min-width: 33vw;" />
+            <MudTabPanel Text="Business" Style="min-width: 30vw; max-width: 33vw;" />
+            <MudTabPanel Text="Premium" Style="min-width: 30vw; max-width: 33vw;" />
+            <MudTabPanel Text="Economy" Style="min-width: 30vw; max-width: 33vw;" />
         </MudTabs>
+
+        <MudStack Style="padding-bottom: 8rem;">
+            @seatsView
+            <MudStack Style="@($@"
+                          position: fixed;
+                          left: 0;
+                          right: 0;
+                          bottom: calc(var(--mud-appbar-height) - var(--mud-appbar-height) / 8);
+                          max-height: 8rem;
+                          background-color: var(--mud-palette-background);
+                          padding: 1rem;
+                      ")"
+                      AlignItems="@AlignItems.Center">
+                @legend(true)
+                <MudStack AlignItems="@AlignItems.End"
+                          Style="width: 100%;">
+                    @nextButton
+                </MudStack>
+            </MudStack>
+        </MudStack>
     </Mobile>
 </DeviceView>
 
+@if (_selectedSeat is not null && _flights is not null && _addOns is not null)
+{
+    <MudHtmlForm Action="/Flights/AddOns"
+                 Method="@HtmlFormMethod.Get"
+                 Style="display: none;"
+                 @ref="_form">
+        <input name="from" value="@From" />
+        <input name="to" value="@To" />
+        <input name="date" value="@Date" />
+        <input name="returnDate" value="@ReturnDate" />
+        @foreach (var flight in _flights)
+        {
+            <input name="flightId" value="@flight.FlightId" />
+            <input name="flightDeparture" value="@flight.DepartureTime" />
+        }
+        <input name="flightIndex" value="@FlightIndex" />
+        @foreach (var addOn in _addOns)
+        {
+            <input name="addOnId" value="@addOn.Id" />
+        }
+    </MudHtmlForm>
+}
+
 @code {
     private Journey? _journey;
+    private List<AddOn>? _addOns;
     private List<Flight>? _flights;
     private SeatType _seatType;
     private List<Seat>? _seats;
+    private Seat? _selectedSeat;
+
+    private MudHtmlForm? _form;
 
     [SupplyParameterFromQuery]
     public required string From { get; set; }
@@ -101,15 +252,44 @@
     [SupplyParameterFromQuery(Name = "addOnId")]
     public string[] AddOnIds { get; init; } = [];
 
+    private void ChangeSeat(Seat? seat)
+    {
+        if (seat != _selectedSeat)
+        {
+            if (_addOns is not null)
+            {
+                if (_selectedSeat is not null)
+                {
+                    _addOns.Remove(_selectedSeat);
+                }
+                if (seat is not null)
+                {
+                    _addOns.Add(seat);
+                }
+            }
+            _selectedSeat = seat;
+            StateHasChanged();
+        }
+    }
+
     private async Task RefreshSeats()
     {
         if (_flights is not null)
         {
+            if (_seats is not null)
+            {
+                // Triggers the loading progress circle since this operation
+                // takes a long time.
+                _seats = null;
+                StateHasChanged();
+            }
             _seats = await BookingsService.GetSeatsAsync(
                 _flights[FlightIndex].FlightId,
                 _flights[FlightIndex].DepartureTime,
                 _seatType
                 ).ToListAsync();
+            ChangeSeat(null);
+            StateHasChanged();
         }
     }
 
@@ -126,6 +306,13 @@
                 })
                 .ToListAsync();
             _journey = _flights.ToJourney(From, To, Date, ReturnDate);
+
+            // TODO: Actually load the AddOns!!!!
+            _addOns = [];
+            if (_selectedSeat is not null)
+            {
+                _addOns.Add(_selectedSeat);
+            }
 
             if (_seats is null)
             {
