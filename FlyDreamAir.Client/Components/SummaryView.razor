@@ -91,12 +91,12 @@
                     <tr>
                         <td>
                             <MudText>
-                                <b>@addOn.Name</b>
+                                <b>@addOn.AddOn.Name - Flight @addOn.Flight.FlightId</b>
                             </MudText>
                         </td>
                         <td>
                             <MudText>
-                                <b>$@addOn.Price</b>
+                                <b>$@(addOn.AddOn.Price * addOn.Amount)</b>
                             </MudText>
                         </td>
                     </tr>
@@ -110,7 +110,10 @@
                 </td>
                 <td>
                     <MudText>
-                        <b>$@((Journey?.BaseCost ?? 0) + (AddOns?.Sum(a => a.Price) ?? 0))</b>
+                        <b>
+                            $@((Journey?.BaseCost ?? 0) +
+                            (AddOns?.Sum(a => a.AddOn.Price * a.Amount) ?? 0))
+                        </b>
                     </MudText>
                 </td>
             </tr>
@@ -123,7 +126,7 @@
     public Journey? Journey { get; set; }
 
     [Parameter]
-    public List<AddOn>? AddOns { get; set; }
+    public List<PreOrderedAddOn>? AddOns { get; set; }
 
     [Parameter]
     public int? FlightIndex { get; set; }

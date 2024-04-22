@@ -1,0 +1,240 @@
+﻿@using FlyDreamAir.Data.Model
+@inject BookingsService BookingsService
+
+@{
+    RenderFragment nextButton =
+        @<MudButton Variant="@Variant.Filled"
+                            Color="@Color.Primary"
+                            Disabled="@(!EnableNextButton)"
+                            OnClick="async () => { if (_form is not null) await _form.Submit(); }"
+                            Style="border-radius: 100px; min-width: 33%;">
+            Next
+        </MudButton>;
+}
+
+<DeviceView>
+    <Desktop>
+        <MudTitle Typo="@Typo.h4"
+                  Align="@Align.Center"
+                  Color="@Color.Primary"
+                  Class="m-3"
+                  Style="user-select: none;" />
+        <MudStack Row="true" Class="m-2" Justify="@Justify.SpaceBetween" Spacing="10">
+            @DesktopContent
+            <MudStack Style="min-width: 33%;" AlignItems="@AlignItems.End">
+                <SummaryView Journey="@_journey" AddOns="_addOns" FlightIndex="@FlightIndex" />
+                @nextButton
+            </MudStack>
+        </MudStack>
+    </Desktop>
+    <Mobile>
+        <MudStack Style="@($@"
+                      padding-bottom: calc(4rem + {MobileBottomPadding});
+                      padding-top: {MobileTopPadding};
+                  ")">
+            <MudStack Style="@($@"
+                          position: fixed;
+                          left: 0;
+                          right: 0;
+                          top: calc(var(--mud-appbar-height) - var(--mud-appbar-height) / 8);
+                          max-height: {MobileTopPadding}
+                      ")">
+                @MobileTopContent
+            </MudStack>
+            @MobileContent
+            <MudStack Style="@($@"
+                          position: fixed;
+                          left: 0;
+                          right: 0;
+                          bottom: calc(var(--mud-appbar-height) - var(--mud-appbar-height) / 8);
+                          max-height: calc(4rem + {MobileBottomPadding});
+                          background-color: var(--mud-palette-background);
+                          padding: 1rem;
+                      ")"
+                      AlignItems="@AlignItems.Center">
+                @MobileBottomContent
+                <MudStack AlignItems="@AlignItems.End"
+                          Style="width: 100%;">
+                    @nextButton
+                </MudStack>
+            </MudStack>
+        </MudStack>
+    </Mobile>
+</DeviceView>
+
+@if (EnableNextButton && _flights is not null && _addOns is not null)
+{
+    <MudHtmlForm Action="@FormAction"
+                 Method="@HtmlFormMethod.Get"
+                 Style="display: none;"
+                 @ref="_form">
+        <input name="from" value="@From" />
+        <input name="to" value="@To" />
+        <input name="date" value="@Date" />
+        <input name="returnDate" value="@ReturnDate" />
+        @foreach (var flight in _flights)
+        {
+            <input name="flightId" value="@flight.FlightId" />
+            <input name="flightDeparture" value="@flight.DepartureTime" />
+        }
+        <input name="flightIndex" value="@FlightIndex" />
+        @foreach (var addOn in _addOns)
+        {
+            <input name="addOnId" value="@addOn.AddOn.Id" />
+            <input name="addOnFlightIndex" value="@_flights.IndexOf(addOn.Flight)" />
+            <input name="addOnAmount" value="@addOn.Amount" />
+        }
+    </MudHtmlForm>
+}
+
+@code {
+    private Journey? _journey;
+    private List<PreOrderedAddOn>? _addOns;
+    private List<Flight>? _flights;
+    private Flight? _currentFlight;
+
+    private MudHtmlForm? _form;
+
+    [SupplyParameterFromQuery]
+    public required string From { get; set; }
+
+    [SupplyParameterFromQuery]
+    public required string To { get; set; }
+
+    [SupplyParameterFromQuery]
+    public required DateTime Date { get; set; }
+
+    [SupplyParameterFromQuery]
+    public DateTime? ReturnDate { get; set; }
+
+    [SupplyParameterFromQuery(Name = "flightId")]
+    public required string[] FlightIds { get; init; } = [];
+
+    [SupplyParameterFromQuery(Name = "flightDeparture")]
+    public required DateTime[] FlightDepartures { get; init; } = [];
+
+    [SupplyParameterFromQuery]
+    public required int FlightIndex { get; init; }
+
+    [SupplyParameterFromQuery(Name = "addOnId")]
+    public Guid[] AddOnIds { get; init; } = [];
+
+    [SupplyParameterFromQuery(Name = "addOnFlightIndex")]
+    public int[] AddOnFlightIndexes { get; init; } = [];
+
+    [SupplyParameterFromQuery(Name = "addOnAmount")]
+    public decimal[] AddOnAmounts { get; init; } = [];
+
+    protected List<Flight>? Flights => _flights;
+    protected virtual bool EnableNextButton => false;
+    protected virtual string FormAction => throw new NotImplementedException();
+    protected virtual string MobileTopPadding => "0px";
+    protected virtual string MobileBottomPadding => "0px";
+    protected virtual RenderFragment? MobileTopContent => null;
+    protected virtual RenderFragment? MobileBottomContent => null;
+    protected virtual RenderFragment? MobileContent => null;
+    protected virtual RenderFragment? DesktopContent => null;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_journey is null)
+        {
+            _flights = await Enumerable.Zip(FlightIds, FlightDepartures)
+                .ToAsyncEnumerable()
+                .SelectAwait(async (p) =>
+                {
+                    var (id, departure) = p;
+                    return await BookingsService.GetFlightAsync(id, departure);
+                })
+                .ToListAsync();
+            _journey = _flights.ToJourney(From, To, Date, ReturnDate);
+            _currentFlight = _flights[FlightIndex];
+
+            _addOns = await Enumerable.Zip(AddOnIds, AddOnFlightIndexes, AddOnAmounts)
+                .ToAsyncEnumerable()
+                .SelectAwait(async (args) =>
+                {
+                    var (id, flightIndex, amount) = args;
+                    return new PreOrderedAddOn()
+                    {
+                        AddOn = await BookingsService.GetAddOnAsync(id,
+                            _flights[flightIndex].FlightId,
+                            _flights[flightIndex].DepartureTime
+                        ),
+                        Flight = _flights[flightIndex],
+                        Amount = amount
+                    };
+                })
+                .ToListAsync();
+
+            StateHasChanged();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    protected bool RemoveAddOn(AddOn addOn, decimal? amount = null)
+    {
+        if (_addOns is null)
+        {
+            return false;
+        }
+        var orderedAddOn = _addOns
+            .Where(a => a.AddOn == addOn && a.Flight == _currentFlight)
+            .SingleOrDefault();
+        if (orderedAddOn is null)
+        {
+            return false;
+        }
+        if (amount.HasValue)
+        {
+            if (orderedAddOn.Amount > amount.Value)
+            {
+                orderedAddOn.Amount -= amount.Value;
+                return true;
+            }
+            else if (orderedAddOn.Amount == amount.Value)
+            {
+                return _addOns.Remove(orderedAddOn);
+            }
+            else
+            {
+                return false;
+            }
+        }
+        else
+        {
+            return _addOns.Remove(orderedAddOn);
+        }
+    }
+
+    protected bool AddAddOn(AddOn addOn, decimal? amount = null)
+    {
+        if (_addOns is null || _currentFlight == null)
+        {
+            return false;
+        }
+        var orderedAddOn = _addOns
+            .Where(a => a.AddOn == addOn && a.Flight == _currentFlight)
+            .SingleOrDefault();
+        if (orderedAddOn is null)
+        {
+            _addOns.Add(new()
+            {
+                AddOn = addOn,
+                Flight = _currentFlight,
+                Amount = amount ?? 1
+            });
+            return true;
+        }
+        if (amount.HasValue)
+        {
+            orderedAddOn.Amount += amount.Value;
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+}
