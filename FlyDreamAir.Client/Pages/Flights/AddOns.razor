@@ -1,7 +1,134 @@
 ﻿@page "/Flights/AddOns"
+@inherits AddOnPageBase
+@using FlyDreamAir.Data.Model
+@inject BookingsService BookingsService
 
 <PageTitle>Add-on services</PageTitle>
 
-@code {
+@{
+    base.BuildRenderTree(__builder);
+}
 
+@code {
+    private List<AddOn>? _addOns;
+    private Dictionary<string, AddOn?> _selectedAddOns = new();
+
+    private RenderFragment _AddOnsView(bool isMobile) =>
+        @<MudStack Class="p-2 w-100" AlignItems="@AlignItems.Center">
+            @if (_addOns is not null)
+            {
+                <MudStack Class="@($@"
+                              w-100
+                              {(isMobile ? "px-8" : "@")}
+                          ")">
+                    @foreach (var addOnGroup in _addOns.GroupBy(a => a.Type))
+                    {
+                        <MudText Typo="@Typo.h6" Style="user-select: none;">
+                            @(addOnGroup.First().Type switch {
+                                nameof(Luggage) => "Luggage",
+                                nameof(Meal) => "Hot meals",
+                                _ => addOnGroup.First().Type
+                            })
+                        </MudText>
+                        @foreach (var addOn in addOnGroup)
+                        {
+                            var title = "";
+                            var subtitle = "";
+                            var imageSrc = "";
+                            var isSelected =
+                                _selectedAddOns.GetValueOrDefault(addOn.Type) == addOn;
+                            switch (addOn)
+                            {
+                                case Luggage luggage:
+                                    title = "Checked";
+                                    subtitle = $"+{luggage.Amount}kg";
+                                    imageSrc = luggage.ImageSrc.ToString();
+                                break;
+                                case Meal meal:
+                                    title = meal.DishName;
+                                    subtitle = meal.Description;
+                                    imageSrc = meal.ImageSrc.ToString();
+                                break;
+                            }
+                            <MudPaper Style="@($@"
+                                          background-color:
+                                              {(isSelected ?
+                                                  "var(--mud-palette-primary-darken);@" :
+                                                  "var(--mud-palette-surface);@")};
+                                          padding: 1rem;
+                                          overflow: hidden;
+                                          height: 5rem;
+                                          {(isMobile ? "" : "max-width: 20rem;@")};
+                                          position: relative;
+                                      ")"
+                                      Elevation="@(isSelected ? 0 : 1)"
+                                      @onclick="() => AddOnView_Click(addOn)">
+                                <MudStack Row="true"
+                                            AlignItems="@AlignItems.Center"
+                                            Justify="@Justify.SpaceBetween">
+                                    <MudStack Spacing="1">
+                                        <MudText>
+                                            <b>@title</b>
+                                        </MudText>
+                                        <MudText>
+                                            @subtitle
+                                        </MudText>
+                                    </MudStack>
+                                    <MudImage Src="@imageSrc"
+                                              Style="@($@"
+                                                  width: 5rem;
+                                                  height: 5rem;
+                                                  position: absolute;
+                                                  right: 0; top: 0; bottom: 0;
+                                              ")" />
+                                </MudStack>
+                            </MudPaper>
+                        }
+                    }
+                </MudStack>
+            }
+            else
+            {
+                <MudProgressCircular Indeterminate="true" Class="m-5" />
+            }
+        </MudStack>;
+
+    private void AddOnView_Click(AddOn addOn)
+    {
+        var oldSelected = _selectedAddOns.GetValueOrDefault(addOn.Type);
+        if (oldSelected is not null)
+        {
+            RemoveAddOn(oldSelected);
+            _selectedAddOns.Remove(addOn.Type);
+        }
+        // So that a double click means removal.
+        if (addOn != oldSelected)
+        {
+            _selectedAddOns[addOn.Type] = addOn;
+            AddAddOn(addOn);
+        }
+        StateHasChanged();
+    }
+
+    protected override bool EnableNextButton => _selectedAddOns.Any();
+    protected override bool IsSkippable => true;
+    protected override string FormAction => (FlightIndex < Flights.Count - 1) ?
+                                                "/Flights/Seats" : "/Flights/Summary";
+    protected override int NextFlightIndex => (FlightIndex < Flights.Count - 1) ?
+                                                FlightIndex + 1 : FlightIndex;
+    protected override RenderFragment MobileContent => _AddOnsView(true);
+    protected override RenderFragment DesktopContent => _AddOnsView(false);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (_addOns is null)
+        {
+            _addOns = await BookingsService.GetAddOnsAsync(
+                Flights[FlightIndex].FlightId, Flights[FlightIndex].DepartureTime
+            ).ToListAsync();
+            StateHasChanged();
+        }
+    }
 }

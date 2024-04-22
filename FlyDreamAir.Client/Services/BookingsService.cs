@@ -18,8 +18,8 @@ public class BookingsService
     public IAsyncEnumerable<AddOn> GetAddOnsAsync(
         string flightId,
         DateTimeOffset departureTime,
-        string? type,
-        bool? includeSeats
+        string? type = null,
+        bool? includeSeats = null
     )
     {
         return _GetObjectsFromJsonAsAsyncEnumerable<AddOn>(new()

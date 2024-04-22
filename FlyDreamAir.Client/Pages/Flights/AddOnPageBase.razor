@@ -5,10 +5,17 @@
     RenderFragment nextButton =
         @<MudButton Variant="@Variant.Filled"
                             Color="@Color.Primary"
-                            Disabled="@(!EnableNextButton)"
+                            Disabled="@(!IsSkippable && !EnableNextButton)"
                             OnClick="async () => { if (_form is not null) await _form.Submit(); }"
                             Style="border-radius: 100px; min-width: 33%;">
-            Next
+            @if (EnableNextButton)
+            {
+                <Wrapper>Next</Wrapper>
+            }
+            else
+            {
+                <Wrapper>Skip</Wrapper>
+            }
         </MudButton>;
 }
 
@@ -62,7 +69,7 @@
     </Mobile>
 </DeviceView>
 
-@if (EnableNextButton && _flights is not null && _addOns is not null)
+@if ((IsSkippable || EnableNextButton) && _flights is not null && _addOns is not null)
 {
     <MudHtmlForm Action="@FormAction"
                  Method="@HtmlFormMethod.Get"
@@ -77,7 +84,7 @@
             <input name="flightId" value="@flight.FlightId" />
             <input name="flightDeparture" value="@flight.DepartureTime" />
         }
-        <input name="flightIndex" value="@FlightIndex" />
+        <input name="flightIndex" value="@NextFlightIndex" />
         @foreach (var addOn in _addOns)
         {
             <input name="addOnId" value="@addOn.AddOn.Id" />
@@ -127,7 +134,9 @@
 
     protected List<Flight>? Flights => _flights;
     protected virtual bool EnableNextButton => false;
+    protected virtual bool IsSkippable => false;
     protected virtual string FormAction => throw new NotImplementedException();
+    protected virtual int NextFlightIndex => FlightIndex;
     protected virtual string MobileTopPadding => "0px";
     protected virtual string MobileBottomPadding => "0px";
     protected virtual RenderFragment? MobileTopContent => null;
