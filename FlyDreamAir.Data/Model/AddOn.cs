@@ -2,8 +2,11 @@
 
 namespace FlyDreamAir.Data.Model;
 
-[JsonDerivedType(typeof(AddOn))]
-[JsonDerivedType(typeof(Seat))]
+[JsonPolymorphic(TypeDiscriminatorPropertyName = nameof(Type))]
+[JsonDerivedType(typeof(AddOn), nameof(AddOn))]
+[JsonDerivedType(typeof(Luggage), nameof(Luggage))]
+[JsonDerivedType(typeof(Meal), nameof(Meal))]
+[JsonDerivedType(typeof(Seat), nameof(Seat))]
 public class AddOn
 {
     public Guid Id { get; set; }

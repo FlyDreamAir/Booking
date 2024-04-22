@@ -63,6 +63,15 @@ public static class BookingSeeder
             "NT 1027", "MEL", "SYD", new TimeSpan(1, 25, 0), 90,
             new TimeOnly(12, 00));
 
+        // AddOns
+        // Luggage
+        await dbContext.UpdateLuggage(20, 50);
+        await dbContext.UpdateLuggage(40, 80);
+
+        // Meals
+        await dbContext.UpdateMeal("Curry", "Vegan", 10.0m, new Uri("https://www.justonecookbook.com/wp-content/uploads/2020/02/Vegetarian-Curry-4360-I.jpg"));
+        await dbContext.UpdateMeal("Banh mi", "Beef", 9.0m, new Uri("https://images.getrecipekit.com/20230813061131-andy-20cooks-20-20roast-20pork-20banh-20mi.jpg?aspect_ratio=4:3&quality=90&"));
+
         await dbContext.SaveChangesAsync();
     }
 
@@ -229,7 +238,6 @@ public static class BookingSeeder
                     dbContext.Entry(new Seat()
                     {
                         Name = $"{nameof(Seat)} {row}{letter} - " +
-                               $"{flight.FlightId} - " +
                                $"{Enum.GetName(@class)} Class",
                         Type = nameof(Seat),
                         Price = decimal.Round(
@@ -250,5 +258,46 @@ public static class BookingSeeder
                 }
             }
         }
+    }
+
+    private static async Task UpdateLuggage(
+        this ApplicationDbContext dbContext,
+        decimal amount,
+        decimal price
+    )
+    {
+        await dbContext.Luggage.Where(l => l.Amount == amount)
+            .ExecuteDeleteAsync();
+
+        dbContext.Entry(new Luggage()
+        {
+            Name = $"Additional Luggage - {amount}kg",
+            Type = nameof(Luggage),
+            Price = price,
+            ImageSrc = new Uri("https://media.istockphoto.com/id/474510508/photo/purple-suitcase-isolated-on-white-background.jpg?s=612x612&w=0&k=20&c=vUvZv4JfS43vodCyXJb_JlH9mKbPcBtdgr0mmrjjejY="),
+            Amount = amount
+        }).State = EntityState.Added;
+    }
+
+    private static async Task UpdateMeal(
+        this ApplicationDbContext dbContext,
+        string dishName,
+        string description,
+        decimal price,
+        Uri imageSrc
+    )
+    {
+        await dbContext.Meals.Where(m => m.DishName == dishName)
+            .ExecuteDeleteAsync();
+
+        dbContext.Entry(new Meal()
+        {
+            Name = $"Hot Meal - {dishName}",
+            Type = nameof(Meal),
+            Price = price,
+            ImageSrc = imageSrc,
+            DishName = dishName,
+            Description = description
+        }).State = EntityState.Added;
     }
 }

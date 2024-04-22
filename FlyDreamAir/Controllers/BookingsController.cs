@@ -26,6 +26,39 @@ public class BookingsController: ControllerBase
         _flightsService = flightsService;
     }
 
+    [HttpGet(nameof(GetAddOns))]
+    public ActionResult<IAsyncEnumerable<AddOn>> GetAddOns(
+        [FromQuery]
+        string flightId,
+        [FromQuery]
+        DateTimeOffset departureTime,
+        [FromQuery]
+        string? type,
+        [FromQuery]
+        bool? includeSeats
+    )
+    {
+        return Ok(_addOnService.GetAddOnsAsync(flightId, departureTime, type, includeSeats));
+    }
+
+    [HttpGet(nameof(GetAddOn))]
+    public async Task<ActionResult<AddOn>> GetAddOn(
+        [FromQuery]
+        Guid id,
+        [FromQuery]
+        string flightId,
+        [FromQuery]
+        DateTimeOffset departureTime
+    )
+    {
+        var addOn = await _addOnService.GetAddOnAsync(id, flightId, departureTime);
+        if (addOn is not null)
+        {
+            return Ok(addOn);
+        }
+        return NotFound();
+    }
+
     [HttpGet(nameof(GetAirports))]
     public ActionResult<IAsyncEnumerable<Airport>> GetAirports()
     {

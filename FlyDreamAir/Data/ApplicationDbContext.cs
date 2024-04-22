@@ -10,6 +10,8 @@ namespace FlyDreamAir.Data
         public DbSet<Booking> Bookings { get; init; }
         public DbSet<Customer> Customers { get; init; }
         public DbSet<Flight> Flights { get; init; }
+        public DbSet<Luggage> Luggage { get; init; }
+        public DbSet<Meal> Meals { get; init; }
         public DbSet<OrderedAddOn> OrderedAddOns { get; init; }
         public DbSet<Payment> Payments { get; init; }
         public DbSet<ScheduledFlight> ScheduledFlights { get; init; }
@@ -24,6 +26,8 @@ namespace FlyDreamAir.Data
             {
                 b.HasDiscriminator(e => e.Type)
                     .HasValue<AddOn>(nameof(AddOn))
+                    .HasValue<Luggage>(nameof(Db.Luggage))
+                    .HasValue<Meal>(nameof(Meal))
                     .HasValue<Seat>(nameof(Seat));
             });
 

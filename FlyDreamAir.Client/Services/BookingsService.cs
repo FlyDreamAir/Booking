@@ -15,6 +15,36 @@ public class BookingsService
         _httpClient = httpClient;
     }
 
+    public IAsyncEnumerable<AddOn> GetAddOnsAsync(
+        string flightId,
+        DateTimeOffset departureTime,
+        string? type,
+        bool? includeSeats
+    )
+    {
+        return _GetObjectsFromJsonAsAsyncEnumerable<AddOn>(new()
+        {
+            { nameof(flightId), flightId },
+            { nameof(departureTime), departureTime },
+            { nameof(type), type },
+            { nameof(includeSeats), includeSeats },
+        });
+    }
+
+    public Task<AddOn> GetAddOnAsync(
+        Guid id,
+        string flightId,
+        DateTimeOffset departureTime
+    )
+    {
+        return _httpClient.GetFromJsonAsync<AddOn>(_GetApiUri(new()
+        {
+            { nameof(id), id },
+            { nameof(flightId), flightId },
+            { nameof(departureTime), departureTime }
+        }))!;
+    }
+
     public IAsyncEnumerable<Airport> GetAirportsAsync()
     {
         return _GetObjectsFromJsonAsAsyncEnumerable<Airport>();
