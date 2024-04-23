@@ -3,18 +3,28 @@
 <PageTitle>Home</PageTitle>
 
 <div class="m-2">
-    <div class="m-5">
-        <DeviceView>
-            <Desktop>
-                <MudImage Src="assets/plane.png" ObjectFit="@ObjectFit.Cover"
-                          Style="max-width: 50%; margin-left: auto; margin-right: auto; display: block;" />
-            </Desktop>
-            <Mobile>
-                <MudImage Src="assets/plane.png" ObjectFit="@ObjectFit.Cover"
-                          Style="max-width: 100%; margin-left: auto; margin-right: auto; display: block;" />
-            </Mobile>
-        </DeviceView>
-    </div>
-
+    <DeviceView>
+        <Desktop>
+            <MudImage Src="assets/plane.png" ObjectFit="@ObjectFit.Cover"
+                      Class="my-12"
+                      Style="@($@"
+                          max-width: 50%;
+                          margin-left: auto;
+                          margin-right: auto;
+                          display: block;
+                      ")" />
+        </Desktop>
+        <Mobile>
+            <MudImage Src="assets/plane.png" ObjectFit="@ObjectFit.Cover"
+                      Class="my-5"
+                      Style="@($@"
+                          max-width: 75%;
+                          max-height: 15vh;
+                          margin-left: auto;
+                          margin-right: auto;
+                          display: block;
+                      ")" />
+        </Mobile>
+    </DeviceView>
     <FlightSearchView IsComponent="false" />
 </div>
