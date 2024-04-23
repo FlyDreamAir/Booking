@@ -14,7 +14,7 @@
 @code {
     private Booking? _booking;
 
-    private MudForm? _form;
+    private MudHtmlForm? _form;
     private bool _valid = false;
 
     private string? _name;
@@ -23,15 +23,17 @@
     private string? _cvv;
 
     private RenderFragment _Form(bool isMobile) =>
-        @<MudForm @ref="_form" @bind-IsValid="@_valid"
-                  Class="@($@"w-100 {(isMobile ? "p-4" : "px-4")}")">
+        @<MudHtmlForm @ref="_form" @bind-IsValid="@_valid"
+                      Class="@($@"w-100 {(isMobile ? "p-4" : "px-4")}")"
+                      Action="/api/Bookings/PayBooking" Method="@HtmlFormMethod.Post">
             <MudStack Style="w-100">
                 <MudTextField @bind-Value="_name"
                               Label="Name on card"
                               Placeholder="John Doe"
                               Required="true"
                               RequiredError="Please enter the name on the card."
-                              Variant="@Variant.Outlined" />
+                              Variant="@Variant.Outlined"
+                              UserAttributes="@(new() {{"name", "cardName"}})" />
                 <MudTextField @bind-Value="_cardNumber"
                               Label="Card number"
                               Mask="@(new PatternMask("0000 0000 0000 0000"))"
@@ -42,7 +44,8 @@
                               {
                                   ErrorMessage = "Please enter a valid credit card number."
                               })"
-                              Variant="@Variant.Outlined" />
+                              Variant="@Variant.Outlined"
+                              UserAttributes="@(new() {{"name", "cardNumber"}})" />
                 <MudStack Row="true" Spacing="1" Justify="@Justify.SpaceBetween">
                     <div style="width: 66%">
                         <MudTextField @bind-Value="_expiration"
@@ -51,7 +54,8 @@
                                       Placeholder="mm/yy"
                                       Required="true"
                                       RequiredError="Please enter the card's expiration date."
-                                      Variant="@Variant.Outlined" />
+                                      Variant="@Variant.Outlined"
+                                      UserAttributes="@(new() {{"name", "cardExpiration"}})" />
                     </div>
                     <div style="width: 33%">
                         <MudTextField @bind-Value="_cvv"
@@ -60,11 +64,13 @@
                                       Placeholder="123"
                                       Required="true"
                                       RequiredError="Please enter the card's CVV/CVC."
-                                      Variant="@Variant.Outlined" />
+                                      Variant="@Variant.Outlined"
+                                      UserAttributes="@(new() {{"name", "cardCvv"}})" />
                     </div>
                 </MudStack>
             </MudStack>
-        </MudForm>;
+            <input name="id" value="@BookingId" hidden />
+        </MudHtmlForm>;
 
     [SupplyParameterFromQuery]
     public required Guid BookingId { get; set; }
@@ -102,11 +108,7 @@
         {
             return false;
         }
-        await _form.Validate();
-        if (_form.IsValid)
-        {
-            NavigationManager.NavigateTo("/Bookings", true);
-        }
+        await _form.Submit();
         return false;
     }
 }
