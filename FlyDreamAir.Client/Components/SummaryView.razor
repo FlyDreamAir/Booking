@@ -24,10 +24,20 @@
                 <MudStack Spacing="1" AlignItems="@AlignItems.Start">
                     @if (Journey is not null)
                     {
-                        foreach (var flight in Journey.Flights)
+                        for (int i = 0; i < Journey.Flights.Count; ++i)
                         {
+                            var flight = Journey.Flights[i];
+                            // Capture the current value for the children.
+                            var currentFlightIndex = i;
                             <MudText Style="overflow: hidden; white-space: nowrap;">
-                                <b>@flight.FlightId</b>
+                                @if (FlightIndex.HasValue && currentFlightIndex != FlightIndex)
+                                {
+                                    @flight.FlightId
+                                }
+                                else
+                                {
+                                    <b>@flight.FlightId</b>
+                                }
                                 (@flight.From.Id -> @flight.To.Id)
                             </MudText>
                         }
@@ -50,16 +60,17 @@
     </MudPaper>
 
     <style>
-        td {
+        .FlyDreamAir-SummaryView-Table td {
             text-align: right;
         }
-        table td:nth-child(2) {
-            width: 4rem;
+        .FlyDreamAir-SummaryView-Table td:nth-child(2) {
+            width: 6rem;
         }
     </style>
 
     <table style="@($"visibility: {(Journey is null ? "hidden" : "visible")};"
-                  +  "width: 100%;")">
+                  +  "width: 100%;")"
+           class="FlyDreamAir-SummaryView-Table">
         <tbody>
             <tr>
                 <td>
@@ -73,6 +84,29 @@
                     </MudText>
                 </td>
             </tr>
+            @if (AddOns is not null)
+            {
+                foreach (var addOn in AddOns)
+                {
+                    <tr>
+                        <td>
+                            <MudText>
+                                <b>@addOn.AddOn.Name - @addOn.Flight.FlightId</b>
+                            </MudText>
+                        </td>
+                        <td>
+                            <MudText>
+                                <b>$@(addOn.AddOn.Price * addOn.Amount)</b>
+                            </MudText>
+                        </td>
+                    </tr>
+                }
+            }
+            <tr>
+                <td colspan="2" style="width: 0.1rem;">
+                    <MudDivider />
+                </td>
+            </tr>
             <tr>
                 <td>
                     <MudText>
@@ -81,7 +115,10 @@
                 </td>
                 <td>
                     <MudText>
-                        <b>$@Journey?.BaseCost</b>
+                        <b>
+                            $@((Journey?.BaseCost ?? 0) +
+                            (AddOns?.Sum(a => a.AddOn.Price * a.Amount) ?? 0))
+                        </b>
                     </MudText>
                 </td>
             </tr>
@@ -92,4 +129,10 @@
 @code {
     [Parameter]
     public Journey? Journey { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<PreOrderedAddOn>? AddOns { get; set; }
+
+    [Parameter]
+    public int? FlightIndex { get; set; }
 }

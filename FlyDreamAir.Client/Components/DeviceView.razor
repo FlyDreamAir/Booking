@@ -2,17 +2,24 @@
 
 <PrerenderView>
     <Prerender>
-        <DeviceViewCss>
-            <Mobile>
-                @Mobile
-            </Mobile>
-            <Desktop>
-                @Desktop
-            </Desktop>
-        </DeviceViewCss>
+        @if (Prerender)
+        {
+            <DeviceViewCss>
+                <Mobile>
+                    @Mobile
+                </Mobile>
+                <Desktop>
+                    @Desktop
+                </Desktop>
+            </DeviceViewCss>
+        }
+        else
+        {
+            @Unknown
+        }
     </Prerender>
     <Content>
-        @if(_isMobile == false)
+        @if (_isMobile == false)
         {
             @Desktop
         }
@@ -32,6 +39,9 @@
 
     [Parameter]
     public RenderFragment? Unknown { get; set; }
+
+    [Parameter]
+    public bool Prerender { get; set; } = true;
 
     private bool? _isMobile;
     private DotNetObjectReference<DeviceView>? _objRef;

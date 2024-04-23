@@ -1,17 +1,141 @@
 ﻿@page "/Flights/Seats"
+@inherits WizardPageBase
+@using FlyDreamAir.Data.Model
+@inject BookingsService BookingsService
 
 <PageTitle>Select seat</PageTitle>
 
+@{
+    base.BuildRenderTree(__builder);
+}
+
 @code {
-    [SupplyParameterFromQuery(Name = "flightId")]
-    public required string[] FlightIds { get; init; } = [];
+    private SeatType _seatType;
+    private List<Seat>? _seats;
+    private Seat? _selectedSeat;
 
-    [SupplyParameterFromQuery(Name = "flightDeparture")]
-    public required DateTime[] FlightDepartures { get; init; } = [];
+    private readonly RenderFragment<bool> _legend = (isMobile) =>
+        @<MudStack Row="@isMobile">
+            <MudStack Row="true" AlignItems="@AlignItems.Center">
+                <SeatView IsAvailable="false" />
+                <MudText Style="white-space: nowrap">
+                    <b>Unavailable seats</b>
+                </MudText>
+            </MudStack>
+            <MudStack Row="true" AlignItems="@AlignItems.Center">
+                <SeatView IsAvailable="true" />
+                <MudText Style="white-space: nowrap">
+                    <b>Available seats</b>
+                </MudText>
+            </MudStack>
+        </MudStack>;
+    private RenderFragment<SeatType> _button => (seatType) =>
+        @<MudButton OnClick="async () => {
+                        _seatType = seatType;
+                        await RefreshSeats();
+                        StateHasChanged();
+                    }"
+                    StartIcon="@(_seatType == seatType ?
+                        Icons.Material.Outlined.Check : string.Empty
+                    )"
+                    Style="@(
+                        "width: calc(100% / 3);" +
+                        (_seatType == seatType ?
+                            @"background-color:
+                                var(--mud-palette-background-grey);" :
+                            "")
+                    )">
+            @Enum.GetName(seatType)
+        </MudButton>;
 
-    [SupplyParameterFromQuery]
-    public required int FlightIndex { get; init; }
+    protected override bool EnableNextButton => _selectedSeat is not null;
+    protected override string FormAction => "/Flights/AddOns";
+    protected override string MobileTopPadding => "4rem";
+    protected override string MobileBottomPadding => "4rem";
+    protected override RenderFragment? MobileTopContent =>
+        @<MudTabs Rounded="false"
+                  Centered="true"
+                  Style="background-color: var(--mud-palette-surface);"
+                  ActivePanelIndexChanged="@(async (int index) => {
+                     _seatType = index switch {
+                         0 => SeatType.Business,
+                         1 => SeatType.Premium,
+                         2 => SeatType.Economy,
+                         _ => throw new InvalidOperationException("Invalid index.")
+                     };
+                     await RefreshSeats();
+                     StateHasChanged();
+                  })">
+            <MudTabPanel Text="Business" Style="min-width: 30vw; max-width: 33vw;" />
+            <MudTabPanel Text="Premium" Style="min-width: 30vw; max-width: 33vw;" />
+            <MudTabPanel Text="Economy" Style="min-width: 30vw; max-width: 33vw;" />
+        </MudTabs>;
+    protected override RenderFragment MobileBottomContent => _legend(true);
+    protected override RenderFragment MobileContent =>
+        @<SeatsView Seats="_seats"
+                    SelectedSeat="_selectedSeat"
+                    OnClick="ChangeSeat" />;
+    protected override RenderFragment DesktopContent =>
+        @<MudStack Style="width: 100%;">
+            <MudButtonGroup Color="@Color.Default"
+                            Style="border-radius: 100px; border-width: 1px; overflow: hidden;">
+                @_button(SeatType.Business)
+                @_button(SeatType.Premium)
+                @_button(SeatType.Economy)
+            </MudButtonGroup>
+            <MudStack Row="true">
+                @_legend(false)
+                <SeatsView Seats="_seats"
+                            SelectedSeat="_selectedSeat"
+                            OnClick="ChangeSeat" />
+            </MudStack>
+        </MudStack>;
 
-    [SupplyParameterFromQuery(Name = "addOnId")]
-    public string[] AddOnIds { get; init; } = [];
+    private void ChangeSeat(Seat? seat)
+    {
+        if (seat != _selectedSeat)
+        {
+            if (_selectedSeat is not null)
+            {
+                RemoveAddOn(_selectedSeat);
+            }
+            if (seat is null || AddAddOn(seat))
+            {
+                _selectedSeat = seat;
+            }
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshSeats()
+    {
+        if (Flights is not null)
+        {
+            if (_seats is not null)
+            {
+                // Triggers the loading progress circle since this operation
+                // takes a long time.
+                _seats = null;
+                StateHasChanged();
+            }
+            ChangeSeat(null);
+            _seats = await BookingsService.GetSeatsAsync(
+                Flights[FlightIndex].FlightId,
+                Flights[FlightIndex].DepartureTime,
+                _seatType
+            ).ToListAsync();
+            StateHasChanged();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (_seats is null)
+        {
+            await RefreshSeats();
+            StateHasChanged();
+        }
+    }
 }

@@ -1,0 +1,72 @@
+﻿@using FlyDreamAir.Data.Model
+
+@{
+    var realIsAvailable = Seat?.IsAvailable ?? IsAvailable;
+
+    var background = IsSelected ? "var(--mud-palette-secondary)"
+        : (realIsAvailable ? Colors.Purple.Lighten5 : "var(--mud-palette-primary)");
+
+    var icon = IsSelected ? Icons.Material.Outlined.Check : "";
+    var iconColor = IsSelected ? Color.Secondary : Color.Primary;
+
+    RenderFragment<bool> seat = (isMobile) =>
+    {
+        var width = isMobile ? "1.875rem" : "1.5rem";
+        var height = isMobile ? "2.5rem" : "2rem";
+
+        if (Seat is not null)
+        {
+            return
+                @<MudIconButton Variant="@Variant.Filled"
+                                DisableElevation="true"
+                                Icon="@icon"
+                                Color="@iconColor"
+                                Style="@($@"
+                                    min-width: {width};
+                                    width: {width};
+                                    height: {height};
+                                    padding: 0;
+                                    background: {background};
+                                ")"
+                                OnClick="@(() =>
+                                {
+                                    OnClick?.Invoke(Seat);
+                                })" />;
+        }
+        else
+        {
+            return
+                @<MudPaper Elevation="0"
+                           Style="@($@"
+                               min-width: {width};
+                               width: {width};
+                               height: {height};
+                               padding: 0;
+                               background: {background};
+                           ")" />;
+        }
+    };
+}
+
+<DeviceView>
+    <Desktop>
+        @seat(false)
+    </Desktop>
+    <Mobile>
+        @seat(true)
+    </Mobile>
+</DeviceView>
+
+@code {
+    [Parameter]
+    public bool IsAvailable { get; set; }
+
+    [Parameter]
+    public bool IsSelected { get; set; }
+
+    [Parameter]
+    public Seat? Seat { get; set; }
+
+    [Parameter]
+    public Action<Seat>? OnClick { get; set; }
+}

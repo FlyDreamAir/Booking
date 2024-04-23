@@ -1,0 +1,47 @@
+﻿@page "/Flights/Summary"
+@inherits WizardPageBase
+
+<PageTitle>Summary</PageTitle>
+
+<DeviceView>
+    <Desktop>
+        @{
+            _isMobile = false;
+        }
+    </Desktop>
+    <Mobile>
+        @{
+            _isMobile = true;
+        }
+        <div class="p-4">
+            <SummaryView Journey="@Journey"
+                         AddOns="@PreOrderedAddOns"
+                         FlightIndex="@FlightIndex" />
+        </div>
+    </Mobile>
+</DeviceView>
+
+@{
+    base.BuildRenderTree(__builder);
+}
+
+@code {
+    private bool? _isMobile;
+
+    protected override bool EnableNextButton => true;
+    protected override string NextButtonLabel => "Checkout";
+    protected override string FormAction => "/Flights/Information";
+
+    protected override RenderFragment DesktopContent =>
+        @<MudStack Class="w-100" />;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_isMobile == false && Form is not null)
+        {
+            await Form.Submit();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+}

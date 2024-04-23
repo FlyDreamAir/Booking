@@ -1,0 +1,99 @@
+﻿@page "/Flights/Information"
+@using System.ComponentModel.DataAnnotations
+@inherits WizardPageBase
+
+<PageTitle>Information</PageTitle>
+
+@{
+    base.BuildRenderTree(__builder);
+}
+
+@code {
+    private string? _firstName;
+    private string? _lastName;
+    private string? _email;
+    private string? _passportId;
+    private DateTime? _dateOfBirth;
+
+    private MudForm? _form;
+    private bool _valid = false;
+
+    private RenderFragment _Form(bool isMobile) =>
+        @<MudForm @ref="_form" @bind-IsValid="@_valid"
+                  Class="@($@"w-100 {(isMobile ? "p-4" : "px-4")}")">
+            <MudStack>
+                <MudTextField @bind-Value="_firstName"
+                          Label="First name"
+                          Placeholder="John"
+                          Required="true"
+                          RequiredError="Please enter your first name."
+                          Variant="@Variant.Outlined" />
+                <MudTextField @bind-Value="_lastName"
+                          Label="Last name"
+                          Placeholder="Doe"
+                          Required="true"
+                          RequiredError="Please enter your last name."
+                          Variant="@Variant.Outlined" />
+                <MudTextField @bind-Value="_email"
+                          Label="Email"
+                          Placeholder="someone@example.com"
+                          Required="true"
+                          RequiredError="Please enter your email."
+                          Validation="@(new EmailAddressAttribute()
+                          {
+                              ErrorMessage = "Please enter a valid email address."
+                          })"
+                          Variant="@Variant.Outlined" />
+                <MudTextField @bind-Value="_passportId"
+                          Label="Passport ID"
+                          Placeholder="RA123456"
+                          Required="true"
+                          RequiredError="Please enter your passport ID."
+                          Variant="@Variant.Outlined" />
+                <MudDatePicker @bind-Date="@_dateOfBirth"
+                               Label="Date of birth"
+                               Placeholder="dd/mm/yyyy"
+                               DateFormat="dd/MM/yyyy"
+                               MaxDate="@(DateTime.Today)"
+                               Required="true"
+                               RequiredError="Please enter your date of birth."
+                               Variant="@Variant.Outlined" />
+            </MudStack>
+        </MudForm>;
+
+    protected override string? TitleOverride => IsMobile == false ?
+        "Passenger information" : null;
+
+    protected override RenderFragment DesktopContent =>
+        _Form(false);
+
+    protected override RenderFragment MobileContent =>
+        _Form(true);
+
+    protected override bool EnableNextButton => _valid;
+
+    protected override string FormAction => "/Flights/Payment";
+
+    protected override RenderFragment FormAdditionalContent =>
+        @<Wrapper>
+            <input name="firstName" value="@_firstName" />
+            <input name="lastName" value="@_lastName" />
+            <input name="email" value="@_email" />
+            <input name="passportId" value="@_passportId" />
+            <input name="date"
+                   value="@(_dateOfBirth?
+                                .ToString("yyyy-MM-dd",
+                                    System.Globalization.CultureInfo.InvariantCulture))"
+                   hidden />
+        </Wrapper>;
+
+    protected override async Task<bool> OnBeforeSubmitAsync()
+    {
+        if (_form is null)
+        {
+            return false;
+        }
+        await _form.Validate();
+        return _form.IsValid;
+    }
+}

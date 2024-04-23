@@ -28,7 +28,10 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        var currentTitle = await JSRuntime.InvokeAsync<string>("window.eval", "document.title");
+        await using var document = await JSRuntime.InvokeAsync<IJSObjectReference>(
+            "document.valueOf"
+        );
+        var currentTitle = await JSRuntime.InvokeAsync<string>("Reflect.get", document, "title");
         if (!string.IsNullOrEmpty(currentTitle) && _title != currentTitle)
         {
             _title = currentTitle;

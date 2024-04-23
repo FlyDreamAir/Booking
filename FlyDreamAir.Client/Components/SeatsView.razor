@@ -1,0 +1,90 @@
+﻿@using FlyDreamAir.Data.Model
+
+@{
+    RenderFragment<int> divider = (num) =>
+        @<MudText Class="m-2"
+                  Align="@Align.Center"
+                  Style="@($@"
+                      color: var(--mud-palette-grey-light);
+                      width: 1rem;
+                  ")">
+            @num
+        </MudText>;
+}
+
+<MudStack AlignItems="@AlignItems.Center" Style="width: 100%;">
+    @if (Seats is not null)
+    {
+        <style>
+            .FlyDreamAir-SeatsView-Table td {
+                padding-top: 0.5rem;
+                padding-bottom: 0.5rem;
+            }
+        </style>
+        <table class="FlyDreamAir-SeatsView-Table">
+            @foreach (var row in Seats.GroupBy(s => s.SeatRow))
+            {
+                var segments = row.GroupBy(s => s.SeatPosition switch
+                {
+                    var a when a >= 'A' && a <= 'C' => 0,
+                    var b when b >= 'D' && b <= 'G' => 1,
+                    var c when c >= 'H' => 2,
+                    _ => throw new InvalidOperationException(
+                        "Invalid seat position")
+                });
+                @if (row.First().IsEmergencyRow)
+                {
+                    <tr class="m-1">
+                        <td colspan="6">
+                            <MudText Style="@(@"
+                                            color: var(--mud-palette-grey-light);
+                                            text-align: left;
+                                        ")">
+                            <MudIcon Icon="@Icons.Material.Outlined.Info"
+                                        Size="@Size.Small" />
+                                Exit row
+                            </MudText>
+                        </td>
+                    </tr>
+                }
+                <tr class="m-1">
+                    @foreach (var (segment, index) in segments
+                        .Select((s, i) => (s, i)))
+                    {
+                        if (index != 0)
+                        {
+                            <td>@divider(segment.First().SeatRow)</td>
+                        }
+                        <td>
+                            <MudStack Row="true"
+                                        Spacing="1"
+                                        Justify="@Justify.SpaceAround">
+                                @foreach (var seat in segment)
+                                {
+                                    <SeatView Seat="seat"
+                                              IsSelected="@(seat == SelectedSeat)"
+                                              OnClick="(seat) => OnClick?.Invoke(seat)" />
+                                }
+                            </MudStack>
+                        </td>
+                    }
+                </tr>
+            }
+        </table>
+    }
+    else
+    {
+        <MudProgressCircular Indeterminate="true" Class="m-5" />
+    }
+</MudStack>
+
+@code {
+    [Parameter]
+    public List<Seat>? Seats { get; set; }
+
+    [Parameter]
+    public Seat? SelectedSeat { get; set;  }
+
+    [Parameter]
+    public Action<Seat>? OnClick { get; set; }
+}
