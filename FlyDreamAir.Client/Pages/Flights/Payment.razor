@@ -1,0 +1,91 @@
+﻿@page "/Flights/Payment"
+@using System.ComponentModel.DataAnnotations
+@inherits WizardPageBase
+@inject NavigationManager NavigationManager
+
+<PageTitle>Payment</PageTitle>
+
+@{
+    base.BuildRenderTree(__builder);
+}
+
+@code {
+    private MudForm? _form;
+    private bool _valid = false;
+
+    private string? _name;
+    private string? _cardNumber;
+    private string? _expiration;
+    private string? _cvv;
+
+    private RenderFragment _Form(bool isMobile) =>
+        @<MudForm @ref="_form" @bind-IsValid="@_valid"
+                  Class="@($@"w-100 {(isMobile ? "p-4" : "px-4")}")">
+            <MudStack Style="w-100">
+                <MudTextField @bind-Value="_name"
+                              Label="Name on card"
+                              Placeholder="John Doe"
+                              Required="true"
+                              RequiredError="Please enter the name on the card."
+                              Variant="@Variant.Outlined" />
+                <MudTextField @bind-Value="_cardNumber"
+                              Label="Card number"
+                              Mask="@(new PatternMask("0000 0000 0000 0000"))"
+                              Placeholder="1234 5678 9101 1121"
+                              Required="true"
+                              RequiredError="Please enter the card's number."
+                              Validation="@(new CreditCardAttribute()
+                              {
+                                  ErrorMessage = "Please enter a valid credit card number."
+                              })"
+                              Variant="@Variant.Outlined" />
+                <MudStack Row="true" Spacing="1" Justify="@Justify.SpaceBetween">
+                    <div style="width: 66%">
+                        <MudTextField @bind-Value="_expiration"
+                                      Label="Expiration Date"
+                                      Mask="@(new DateMask("MM/YY", 'Y', 'M'))"
+                                      Placeholder="mm/yy"
+                                      Required="true"
+                                      RequiredError="Please enter the card's expiration date."
+                                      Variant="@Variant.Outlined" />
+                    </div>
+                    <div style="width: 33%">
+                        <MudTextField @bind-Value="_cvv"
+                                      Label="CVV/CVC"
+                                      Mask="@(new PatternMask("000"))"
+                                      Placeholder="123"
+                                      Required="true"
+                                      RequiredError="Please enter the card's CVV/CVC."
+                                      Variant="@Variant.Outlined" />
+                    </div>
+                </MudStack>
+            </MudStack>
+        </MudForm>;
+
+    protected override RenderFragment DesktopContent =>
+        _Form(false);
+
+    protected override RenderFragment MobileContent =>
+        _Form(true);
+
+    protected override bool EnableNextButton => _valid;
+
+    protected override string NextButtonLabel => "Confirm and pay";
+
+    protected override string FormAction => "/Bookings";
+
+
+    protected override async Task<bool> OnBeforeSubmitAsync()
+    {
+        if (_form is null)
+        {
+            return false;
+        }
+        await _form.Validate();
+        if (_form.IsValid)
+        {
+            NavigationManager.NavigateTo("/Bookings", true);
+        }
+        return false;
+    }
+}

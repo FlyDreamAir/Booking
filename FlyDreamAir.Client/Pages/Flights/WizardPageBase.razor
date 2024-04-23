@@ -6,7 +6,7 @@
         @<MudButton Variant="@Variant.Filled"
                             Color="@Color.Primary"
                             Disabled="@(!IsSkippable && !EnableNextButton)"
-                            OnClick="async () => { if (_form is not null) await _form.Submit(); }"
+                            OnClick="Submit"
                             Style="border-radius: 100px; min-width: 33%;">
             @NextButtonLabel
         </MudButton>;
@@ -14,14 +14,28 @@
 
 <DeviceView>
     <Desktop>
+        <!-- Pretend that we do not know that we're on the deskop to get the loading title. -->
+        @if (TitleOverride is null)
+        {
+            <MudTitle Typo="@Typo.h4"
+                      Align="@Align.Center"
+                      Color="@Color.Primary"
+                      Class="m-3"
+                      Style="user-select: none;" />
+        }
+        else
+        {
+            <MudText Typo="@Typo.h4"
+                     Align="@Align.Center"
+                     Color="@Color.Primary"
+                     Class="m-3"
+                     Style="user-select: none;">
+                @TitleOverride
+            </MudText>
+        }
         @{
             _isMobile = false;
         }
-        <MudTitle Typo="@Typo.h4"
-                  Align="@Align.Center"
-                  Color="@Color.Primary"
-                  Class="m-3"
-                  Style="user-select: none;" />
         <MudStack Row="true" Class="m-2" Justify="@Justify.SpaceBetween" Spacing="10">
             @DesktopContent
             <MudStack Style="min-width: 33%;" AlignItems="@AlignItems.End">
@@ -90,6 +104,7 @@
             <input name="addOnFlightIndex" value="@_flights.IndexOf(addOn.Flight)" />
             <input name="addOnAmount" value="@addOn.Amount" />
         }
+        @FormAdditionalContent
     </MudHtmlForm>
 }
 
@@ -101,6 +116,14 @@
 
     private MudHtmlForm? _form;
     private bool? _isMobile;
+
+    private async Task Submit()
+    {
+        if (_form is not null && await OnBeforeSubmitAsync())
+        {
+            await _form.Submit();
+        }
+    }
 
     [SupplyParameterFromQuery]
     public required string From { get; set; }
@@ -139,12 +162,16 @@
     protected MudHtmlForm? Form => _form;
     protected bool? IsMobile => _isMobile;
 
+    protected virtual string? TitleOverride => null;
+
     protected virtual bool EnableNextButton => false;
     protected virtual bool IsSkippable => false;
     protected virtual string NextButtonLabel => (IsSkippable && !EnableNextButton) ?
                                                     "Skip" : "Next";
     protected virtual string FormAction => throw new NotImplementedException();
     protected virtual int NextFlightIndex => FlightIndex;
+    protected virtual RenderFragment? FormAdditionalContent => null;
+
     protected virtual string MobileTopPadding => "0px";
     protected virtual string MobileBottomPadding => "0px";
     protected virtual RenderFragment? MobileTopContent => null;
@@ -253,5 +280,10 @@
         {
             return false;
         }
+    }
+
+    protected virtual Task<bool> OnBeforeSubmitAsync()
+    {
+        return Task.FromResult(true);
     }
 }
