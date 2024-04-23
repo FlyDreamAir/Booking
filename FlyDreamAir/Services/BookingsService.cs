@@ -10,16 +10,19 @@ public class BookingsService
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly AddOnService _addOnService;
+    private readonly CardService _cardService;
     private readonly FlightsService _flightsService;
 
     public BookingsService(
         DbContextOptions<ApplicationDbContext> dbContextOptions,
         AddOnService addOnService,
+        CardService cardService,
         FlightsService flightsService
     )
     {
         _dbContext = new(dbContextOptions);
         _addOnService = addOnService;
+        _cardService = cardService;
         _flightsService = flightsService;
     }
 
@@ -313,5 +316,66 @@ public class BookingsService
             },
             AddOns = addOns
         };
+    }
+
+    public async Task PayBookingAsync(
+        Guid id,
+        string cardName,
+        string cardNumber,
+        string cardExpiration,
+        string cardCvv
+    )
+    {
+        using var transaction = await _dbContext.Database.BeginTransactionAsync();
+
+        var flightBaseCost = await _dbContext.Tickets
+            .Include(t => t.Booking)
+            .Include(t => t.Flight)
+            .Include(t => t.Flight.Flight)
+            .Where(t => t.Booking.Id == id)
+            .Select(t => t.Flight.Flight.BaseCost)
+            .SumAsync();
+
+        var addOnsCost = await _dbContext.OrderedAddOns
+            .Include(a => a.AddOn)
+            .Include(a => a.Ticket)
+            .Include(a => a.Ticket.Booking)
+            .Include(a => a.Ticket.Flight)
+            .Include(a => a.Ticket.Flight.Flight)
+            .Where(a => a.Ticket.Booking.Id == id)
+            .Select(a => a.AddOn.Price * a.Amount)
+            .SumAsync();
+
+        var paid = await _dbContext.Payments
+            .Include(p => p.Booking)
+            .Where(p => p.Booking.Id == id)
+            .Select(p => p.Amount)
+            .SumAsync();
+
+        var due = flightBaseCost + addOnsCost - paid;
+
+        if (due <= 0)
+        {
+            return;
+        }
+
+        if (!await _cardService.ValidateAsync(cardName, cardNumber, cardExpiration, cardCvv))
+        {
+            throw new InvalidOperationException("Invalid card.");
+        }
+
+        await _cardService.ChargeAsync(cardName, cardNumber, cardExpiration, cardCvv, due);
+
+        await _dbContext.Payments.AddAsync(new CreditCardPayment()
+        {
+            Amount = due,
+            Booking = await _dbContext.Bookings.SingleAsync(b => b.Id == id),
+            Type = nameof(CreditCardPayment),
+            CardName = cardName,
+            CardNumber = cardNumber
+        });
+
+        await _dbContext.SaveChangesAsync();
+        await transaction.CommitAsync();
     }
 }

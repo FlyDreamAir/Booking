@@ -4,7 +4,6 @@ using FlyDreamAir.Services;
 using FlyDreamAir.Utils;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Primitives;
 using System.Globalization;
 using System.Security.Claims;
 
@@ -279,6 +278,37 @@ public class BookingsController: ControllerBase
         catch
         {
             return BadRequest();
+        }
+    }
+
+    [HttpPost(nameof(PayBooking))]
+    public async Task<ActionResult> PayBooking(
+        [FromForm]
+        Guid id,
+        [FromForm]
+        string cardName,
+        [FromForm]
+        string cardNumber,
+        [FromForm]
+        string cardExpiration,
+        [FromForm]
+        string cardCvv
+    )
+    {
+        try
+        {
+            await _bookingsService.PayBookingAsync(id,
+                cardName, cardNumber, cardExpiration, cardCvv);
+
+            return Redirect("/Bookings");
+        }
+        catch
+        {
+            return this.RedirectWithQuery("/Flights/Payment", new Dictionary<string, object?>()
+            {
+                { "bookingId", id },
+                { "error", "Payment failed. Please check your card details and try again." }
+            });
         }
     }
 }
