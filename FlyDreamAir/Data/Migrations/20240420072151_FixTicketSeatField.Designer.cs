@@ -3,6 +3,7 @@ using System;
 using FlyDreamAir.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FlyDreamAir.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240420072151_FixTicketSeatField")]
+    partial class FixTicketSeatField
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -101,8 +104,8 @@ namespace FlyDreamAir.Data.Migrations
 
                     b.Property<string>("Type")
                         .IsRequired()
-                        .HasMaxLength(8)
-                        .HasColumnType("character varying(8)");
+                        .HasMaxLength(5)
+                        .HasColumnType("character varying(5)");
 
                     b.HasKey("Id");
 
@@ -426,45 +429,6 @@ namespace FlyDreamAir.Data.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
-                });
-
-            modelBuilder.Entity("FlyDreamAir.Data.Db.Luggage", b =>
-                {
-                    b.HasBaseType("FlyDreamAir.Data.Db.AddOn");
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("numeric");
-
-                    b.Property<string>("ImageSrc")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasDiscriminator().HasValue("Luggage");
-                });
-
-            modelBuilder.Entity("FlyDreamAir.Data.Db.Meal", b =>
-                {
-                    b.HasBaseType("FlyDreamAir.Data.Db.AddOn");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("DishName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("ImageSrc")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.ToTable("AddOns", t =>
-                        {
-                            t.Property("ImageSrc")
-                                .HasColumnName("Meal_ImageSrc");
-                        });
-
-                    b.HasDiscriminator().HasValue("Meal");
                 });
 
             modelBuilder.Entity("FlyDreamAir.Data.Db.Seat", b =>

@@ -10,9 +10,12 @@ namespace FlyDreamAir.Data
         public DbSet<Booking> Bookings { get; init; }
         public DbSet<Customer> Customers { get; init; }
         public DbSet<Flight> Flights { get; init; }
+        public DbSet<Luggage> Luggage { get; init; }
+        public DbSet<Meal> Meals { get; init; }
         public DbSet<OrderedAddOn> OrderedAddOns { get; init; }
         public DbSet<Payment> Payments { get; init; }
         public DbSet<ScheduledFlight> ScheduledFlights { get; init; }
+        public DbSet<Seat> Seats { get; init; }
         public DbSet<Ticket> Tickets { get; init; }
 
         protected override void OnModelCreating(ModelBuilder builder)
@@ -21,7 +24,11 @@ namespace FlyDreamAir.Data
 
             builder.Entity<AddOn>(b =>
             {
-                b.HasDiscriminator(e => e.Type);
+                b.HasDiscriminator(e => e.Type)
+                    .HasValue<AddOn>(nameof(AddOn))
+                    .HasValue<Luggage>(nameof(Db.Luggage))
+                    .HasValue<Meal>(nameof(Meal))
+                    .HasValue<Seat>(nameof(Seat));
             });
 
             builder.Entity<Booking>(b =>
@@ -67,10 +74,16 @@ namespace FlyDreamAir.Data
                 b.HasOne(e => e.Flight).WithMany();
             });
 
+            builder.Entity<Seat>(b =>
+            {
+                b.HasOne(e => e.Flight).WithMany();
+            });
+
             builder.Entity<Ticket>(b =>
             {
                 b.HasOne(e => e.Booking).WithMany();
                 b.HasOne(e => e.Flight).WithMany();
+                b.HasOne(e => e.Seat).WithMany();
             });
         }
     }
