@@ -1,4 +1,5 @@
-﻿using FlyDreamAir.Data;
+﻿using Model = FlyDreamAir.Data.Model;
+using FlyDreamAir.Data;
 using FlyDreamAir.Data.Db;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
@@ -8,12 +9,18 @@ namespace FlyDreamAir.Services;
 public class BookingsService
 {
     private readonly ApplicationDbContext _dbContext;
+    private readonly AddOnService _addOnService;
+    private readonly FlightsService _flightsService;
 
     public BookingsService(
-        DbContextOptions<ApplicationDbContext> dbContextOptions
+        DbContextOptions<ApplicationDbContext> dbContextOptions,
+        AddOnService addOnService,
+        FlightsService flightsService
     )
     {
         _dbContext = new(dbContextOptions);
+        _addOnService = addOnService;
+        _flightsService = flightsService;
     }
 
     public async Task<Guid> CreateBookingAsync(
@@ -181,5 +188,130 @@ public class BookingsService
         await transaction.CommitAsync();
 
         return booking.Id;
+    }
+
+    public async Task ConfirmBookingAsync(
+        Guid id
+    )
+    {
+        using var transaction = await _dbContext.Database.BeginTransactionAsync();
+
+        var booking = await _dbContext.Bookings.Include(b => b.Customer)
+            .SingleAsync(b => b.Id == id);
+
+        var customer = booking.Customer;
+        var unverified = booking.Customer.Email.EndsWith(".unverified.fly.trungnt2910.com");
+
+        if (!unverified)
+        {
+            return;
+        }
+
+        var email = Encoding.UTF8.GetString(Convert.FromBase64String(
+            booking.Customer.Email.Split("@")[0]
+        ));
+
+        var verifiedCustomer =
+            await _dbContext.Customers.SingleOrDefaultAsync(c => c.Email == email);
+
+        if (verifiedCustomer is not null)
+        {
+            verifiedCustomer.FirstName = customer.FirstName;
+            verifiedCustomer.LastName = customer.LastName;
+            verifiedCustomer.PassportId = customer.PassportId;
+            verifiedCustomer.DateOfBirth = customer.DateOfBirth;
+            _dbContext.Customers.Update(verifiedCustomer);
+            _dbContext.Customers.Remove(customer);
+
+            booking.Customer = verifiedCustomer;
+            _dbContext.Bookings.Update(booking);
+        }
+        else
+        {
+            customer.Email = email;
+            _dbContext.Customers.Update(customer);
+        }
+
+        await _dbContext.SaveChangesAsync();
+        await transaction.CommitAsync();
+    }
+
+    public async Task<Model.Booking> GetBookingAsync(
+        Guid id
+    )
+    {
+        var booking = await _dbContext.Bookings.SingleAsync(b => b.Id == id);
+
+        var flights = await _dbContext.Tickets
+            .Include(t => t.Booking)
+            .Include(t => t.Flight)
+            .Include(t => t.Flight.Flight)
+            .Where(t => t.Booking.Id == id)
+            .ToAsyncEnumerable()
+            .SelectAwait(async t => (await _flightsService
+                .GetFlightAsync(t.Flight.Flight.FlightId, t.Flight.DepartureTime, true))!)
+            .OrderBy(f => f.DepartureTime)
+            .ToListAsync();
+
+        var addOns = await _dbContext.OrderedAddOns
+            .Include(a => a.AddOn)
+            .Include(a => a.Ticket)
+            .Include(a => a.Ticket.Booking)
+            .Include(a => a.Ticket.Flight)
+            .Include(a => a.Ticket.Flight.Flight)
+            .Where(a => a.Ticket.Booking.Id == id)
+            .ToAsyncEnumerable()
+            .SelectAwait(async a => new Model.PreOrderedAddOn()
+            {
+                AddOn = (await _addOnService
+                    .GetAddOnAsync(
+                        a.AddOn.Id,
+                        a.Ticket.Flight.Flight.FlightId,
+                        a.Ticket.Flight.DepartureTime,
+                        true))!,
+                Flight = flights.Single(f =>
+                    f.DepartureTime == a.Ticket.Flight.DepartureTime
+                    && f.FlightId == a.Ticket.Flight.Flight.FlightId),
+                Amount = a.Amount
+            })
+            .ToListAsync();
+
+        var returnFlights = new List<Model.Flight>();
+
+        var firstReturnFlight = flights.FirstOrDefault(f => f.From.Id == booking.To);
+        var isTwoWay = firstReturnFlight is not null;
+
+        if (isTwoWay)
+        {
+            returnFlights = flights.SkipWhile(f => f !=  firstReturnFlight).ToList();
+            flights = flights.TakeWhile(f => f != firstReturnFlight).ToList();
+        }
+
+        static TimeSpan GetEstimatedTime(List<Model.Flight> flights)
+        {
+            if (!flights.Any())
+            {
+                return default;
+            }
+            return flights.Last().DepartureTime + flights.Last().EstimatedTime
+                - flights.First().DepartureTime;
+        }
+
+        return new Model.Booking()
+        {
+            Id = id,
+            Journey = new()
+            {
+                From = flights.First().From,
+                To = isTwoWay ? firstReturnFlight!.From : flights.Last().To,
+                IsTwoWay = isTwoWay,
+                BaseCost = flights.Sum(f => f.BaseCost),
+                EstimatedTime = GetEstimatedTime(flights),
+                ReturnEstimatedTime = GetEstimatedTime(returnFlights),
+                Flights = flights,
+                ReturnFlights = returnFlights
+            },
+            AddOns = addOns
+        };
     }
 }

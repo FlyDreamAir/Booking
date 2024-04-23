@@ -61,7 +61,7 @@ public class BookingsController: ControllerBase
         DateTimeOffset departureTime
     )
     {
-        var addOn = await _addOnService.GetAddOnAsync(id, flightId, departureTime);
+        var addOn = await _addOnService.GetAddOnAsync(id, flightId, departureTime, false);
         if (addOn is not null)
         {
             return Ok(addOn);
@@ -87,6 +87,27 @@ public class BookingsController: ControllerBase
             return Ok(airport);
         }
         return NotFound();
+    }
+
+    [HttpGet(nameof(GetBooking))]
+    public async Task<ActionResult<Booking>> GetBooking(
+        [FromQuery]
+        Guid id
+    )
+    {
+        try
+        {
+            var booking = await _bookingsService.GetBookingAsync(id);
+            if (booking is null)
+            {
+                return NotFound();
+            }
+            return Ok(booking);
+        }
+        catch
+        {
+            return NotFound();
+        }
     }
 
     [HttpGet(nameof(GetFlight))]
@@ -237,6 +258,27 @@ public class BookingsController: ControllerBase
                 $@"Please confirm your booking by <a href=""{link}"">clicking here</a>."
             );
             return Redirect("/Flights/CheckEmail");
+        }
+    }
+
+    [HttpPost(nameof(ConfirmBooking))]
+    public async Task<ActionResult> ConfirmBooking(
+        [FromForm]
+        Guid id
+    )
+    {
+        try
+        {
+            await _bookingsService.ConfirmBookingAsync(id);
+
+            return this.RedirectWithQuery("/Flights/Payment", new Dictionary<string, object?>()
+            {
+                { "bookingId", id }
+            });
+        }
+        catch
+        {
+            return BadRequest();
         }
     }
 }
