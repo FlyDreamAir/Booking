@@ -1,4 +1,5 @@
 ﻿using FlyDreamAir.Data;
+using FlyDreamAir.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -53,10 +54,12 @@ public class AccountController : ControllerBase
         }
         else if (result.RequiresTwoFactor)
         {
-            return RedirectWithQuery("/Account/LoginWith2fa", new() {
-                { nameof(returnUrl), returnUrl },
-                { nameof(isPersistent), isPersistent }
-            });
+            return this.RedirectWithQuery("/Account/LoginWith2fa",
+                new Dictionary<string, object?>()
+                {
+                    { nameof(returnUrl), returnUrl },
+                    { nameof(isPersistent), isPersistent }
+                });
         }
         else if (result.IsLockedOut)
         {
@@ -64,10 +67,11 @@ public class AccountController : ControllerBase
         }
         else
         {
-            return RedirectWithQuery("/Account/Login", new() {
-                { nameof(returnUrl), returnUrl },
-                { "error", "Invaild username or password." }
-            });
+            return this.RedirectWithQuery("/Account/Login",
+                new Dictionary<string, object?>() {
+                    { nameof(returnUrl), returnUrl },
+                    { "error", "Invaild username or password." }
+                });
         }
     }
 
@@ -133,10 +137,11 @@ public class AccountController : ControllerBase
 
         if (_userManager.Options.SignIn.RequireConfirmedAccount)
         {
-            return RedirectWithQuery("/Account/RegisterConfirmation", new() {
-                { nameof(returnUrl), returnUrl },
-                { nameof(email), email }
-            });
+            return this.RedirectWithQuery("/Account/RegisterConfirmation",
+                new Dictionary<string, object?>() {
+                    { nameof(returnUrl), returnUrl },
+                    { nameof(email), email }
+                });
         }
 
         await _signInManager.SignInAsync(user, isPersistent: false);
@@ -183,10 +188,12 @@ public class AccountController : ControllerBase
         var externalLoginInfo = await _signInManager.GetExternalLoginInfoAsync();
         if (externalLoginInfo is null)
         {
-            return RedirectWithQuery("/Account/Login", new() {
-                { nameof(returnUrl), returnUrl },
-                { "error", "Failed to log in with the provider." }
-            });
+            return this.RedirectWithQuery("/Account/Login",
+                new Dictionary<string, object?>()
+                {
+                    { nameof(returnUrl), returnUrl },
+                    { "error", "Failed to log in with the provider." }
+                });
         }
 
         switch (action)
@@ -211,11 +218,12 @@ public class AccountController : ControllerBase
                 var email = externalLoginInfo.Principal.FindFirstValue(ClaimTypes.Email) ?? "";
                 var userName = email[0..Math.Min(email.Length, email.IndexOf('@'))];
 
-                return RedirectWithQuery("/Account/ExternalLogin", new() {
-                    { nameof(email), email },
-                    { nameof(userName), userName },
-                    { nameof(returnUrl), returnUrl }
-                });
+                return this.RedirectWithQuery("/Account/ExternalLogin",
+                    new Dictionary<string, object?>() {
+                        { nameof(email), email },
+                        { nameof(userName), userName },
+                        { nameof(returnUrl), returnUrl }
+                    });
             }
             default:
                 return BadRequest("Invalid action.");
@@ -253,17 +261,5 @@ public class AccountController : ControllerBase
                 return BadRequest(result.Errors.First().Description);
             }
         }
-    }
-
-    private RedirectResult RedirectWithQuery(string returnUrl, Dictionary<string, object?> args)
-    {
-        return Redirect(QueryHelpers.AddQueryString(returnUrl, args.Select((kvp) =>
-        {
-            return new KeyValuePair<string, string?>(kvp.Key, kvp.Value switch
-            {
-                bool b => b ? "true" : "false",
-                _ => kvp.Value.ToString()
-            });
-        })));
     }
 }
