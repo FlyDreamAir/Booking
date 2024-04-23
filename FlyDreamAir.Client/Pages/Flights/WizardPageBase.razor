@@ -8,19 +8,15 @@
                             Disabled="@(!IsSkippable && !EnableNextButton)"
                             OnClick="async () => { if (_form is not null) await _form.Submit(); }"
                             Style="border-radius: 100px; min-width: 33%;">
-            @if (EnableNextButton)
-            {
-                <Wrapper>Next</Wrapper>
-            }
-            else
-            {
-                <Wrapper>Skip</Wrapper>
-            }
+            @NextButtonLabel
         </MudButton>;
 }
 
 <DeviceView>
     <Desktop>
+        @{
+            _isMobile = false;
+        }
         <MudTitle Typo="@Typo.h4"
                   Align="@Align.Center"
                   Color="@Color.Primary"
@@ -35,6 +31,9 @@
         </MudStack>
     </Desktop>
     <Mobile>
+        @{
+            _isMobile = true;
+        }
         <MudStack Style="@($@"
                       padding-bottom: calc(4rem + {MobileBottomPadding});
                       padding-top: {MobileTopPadding};
@@ -101,6 +100,7 @@
     private Flight? _currentFlight;
 
     private MudHtmlForm? _form;
+    private bool? _isMobile;
 
     [SupplyParameterFromQuery]
     public required string From { get; set; }
@@ -132,9 +132,17 @@
     [SupplyParameterFromQuery(Name = "addOnAmount")]
     public decimal[] AddOnAmounts { get; init; } = [];
 
-    protected List<Flight>? Flights => _flights;
+    protected IReadOnlyList<Flight>? Flights => _flights;
+    protected IReadOnlyList<PreOrderedAddOn>? PreOrderedAddOns => _addOns;
+    protected Journey? Journey => _journey;
+
+    protected MudHtmlForm? Form => _form;
+    protected bool? IsMobile => _isMobile;
+
     protected virtual bool EnableNextButton => false;
     protected virtual bool IsSkippable => false;
+    protected virtual string NextButtonLabel => (IsSkippable && !EnableNextButton) ?
+                                                    "Skip" : "Next";
     protected virtual string FormAction => throw new NotImplementedException();
     protected virtual int NextFlightIndex => FlightIndex;
     protected virtual string MobileTopPadding => "0px";

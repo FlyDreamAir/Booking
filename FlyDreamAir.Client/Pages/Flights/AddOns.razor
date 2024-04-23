@@ -1,5 +1,5 @@
 ﻿@page "/Flights/AddOns"
-@inherits AddOnPageBase
+@inherits WizardPageBase
 @using FlyDreamAir.Data.Model
 @inject BookingsService BookingsService
 
@@ -112,9 +112,10 @@
 
     protected override bool EnableNextButton => _selectedAddOns.Any();
     protected override bool IsSkippable => true;
-    protected override string FormAction => (FlightIndex < Flights.Count - 1) ?
-                                                "/Flights/Seats" : "/Flights/Summary";
-    protected override int NextFlightIndex => (FlightIndex < Flights.Count - 1) ?
+    protected override string FormAction => (FlightIndex < Flights?.Count - 1) ?
+                                                "/Flights/Seats" : (IsMobile ?? true) ?
+                                                    "/Flights/Summary" : "/Flights/Information";
+    protected override int NextFlightIndex => (FlightIndex < Flights?.Count - 1) ?
                                                 FlightIndex + 1 : FlightIndex;
     protected override RenderFragment MobileContent => _AddOnsView(true);
     protected override RenderFragment DesktopContent => _AddOnsView(false);
@@ -123,7 +124,7 @@
     {
         await base.OnAfterRenderAsync(firstRender);
 
-        if (_addOns is null)
+        if (_addOns is null && Flights is not null)
         {
             _addOns = await BookingsService.GetAddOnsAsync(
                 Flights[FlightIndex].FlightId, Flights[FlightIndex].DepartureTime

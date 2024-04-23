@@ -103,6 +103,11 @@
                 }
             }
             <tr>
+                <td colspan="2" style="width: 0.1rem;">
+                    <MudDivider />
+                </td>
+            </tr>
+            <tr>
                 <td>
                     <MudText>
                         <b>Total</b>
@@ -126,7 +131,7 @@
     public Journey? Journey { get; set; }
 
     [Parameter]
-    public List<PreOrderedAddOn>? AddOns { get; set; }
+    public IReadOnlyList<PreOrderedAddOn>? AddOns { get; set; }
 
     [Parameter]
     public int? FlightIndex { get; set; }

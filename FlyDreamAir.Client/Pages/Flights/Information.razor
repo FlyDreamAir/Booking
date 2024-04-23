@@ -1,0 +1,20 @@
+﻿@page "/Flights/Information"
+@inherits WizardPageBase
+
+<DeviceView>
+    <Desktop>
+        <PageTitle>Passenger information</PageTitle>
+    </Desktop>
+    <Mobile>
+        <PageTitle>Information</PageTitle>
+    </Mobile>
+</DeviceView>
+
+@{
+    base.BuildRenderTree(__builder);
+}
+
+@code {
+    protected override RenderFragment DesktopContent =>
+        @<MudStack Class="w-100" />;
+}
