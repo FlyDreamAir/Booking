@@ -148,7 +148,7 @@
     public required DateTime[] FlightDepartures { get; init; } = [];
 
     [SupplyParameterFromQuery]
-    public required int FlightIndex { get; init; }
+    public required int FlightIndex { get; set; }
 
     [SupplyParameterFromQuery(Name = "addOnId")]
     public Guid[] AddOnIds { get; init; } = [];
@@ -159,9 +159,9 @@
     [SupplyParameterFromQuery(Name = "addOnAmount")]
     public decimal[] AddOnAmounts { get; init; } = [];
 
-    protected IReadOnlyList<Flight>? Flights => _flights;
-    protected IReadOnlyList<PreOrderedAddOn>? PreOrderedAddOns => _addOns;
-    protected Journey? Journey => _journey;
+    protected List<Flight>? Flights { get => _flights; set => _flights = value; }
+    protected List<PreOrderedAddOn>? PreOrderedAddOns { get => _addOns; set => _addOns = value; }
+    protected Journey? Journey { get => _journey; set => _journey = value; }
 
     protected MudHtmlForm? Form => _form;
     protected bool? IsMobile => _isMobile;

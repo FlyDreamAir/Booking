@@ -1,6 +1,8 @@
 ﻿@page "/Flights/Payment"
 @using System.ComponentModel.DataAnnotations
+@using FlyDreamAir.Data.Model
 @inherits WizardPageBase
+@inject BookingsService BookingsService
 @inject NavigationManager NavigationManager
 
 <PageTitle>Payment</PageTitle>
@@ -10,6 +12,8 @@
 }
 
 @code {
+    private Booking? _booking;
+
     private MudForm? _form;
     private bool _valid = false;
 
@@ -62,6 +66,9 @@
             </MudStack>
         </MudForm>;
 
+    [SupplyParameterFromQuery]
+    public required Guid BookingId { get; set; }
+
     protected override RenderFragment DesktopContent =>
         _Form(false);
 
@@ -74,6 +81,20 @@
 
     protected override string FormAction => "/Bookings";
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_booking is null)
+        {
+            FlightIndex = -1;
+            _booking = await BookingsService.GetBookingAsync(BookingId);
+            Journey = _booking.Journey;
+            PreOrderedAddOns = _booking.AddOns;
+            Flights = _booking.Journey.Flights.Concat(_booking.Journey.ReturnFlights).ToList();
+            StateHasChanged();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
 
     protected override async Task<bool> OnBeforeSubmitAsync()
     {
