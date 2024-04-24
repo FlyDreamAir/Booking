@@ -66,6 +66,7 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<AddOnService>();
 builder.Services.AddScoped<AirportsService>();
 builder.Services.AddScoped<BookingsService>();
+builder.Services.AddScoped<CardService>();
 builder.Services.AddScoped<FlightsService>();
 
 // Hacks for prerendering to work.
