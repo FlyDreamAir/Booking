@@ -251,7 +251,7 @@ public class BookingsController: ControllerBase
             var link = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/" +
                 $"Flights/Confirm?bookingId={bookingId}";
             await _emailService.SendEmailAsync(
-                to,
+                email,
                 "Confirm your booking",
                 $"Please confirm your booking by clicking here: {link}",
                 $@"Please confirm your booking by <a href=""{link}"">clicking here</a>."
