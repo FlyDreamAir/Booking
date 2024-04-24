@@ -1,7 +1,8 @@
 ﻿@using Microsoft.AspNetCore.WebUtilities;
 @inject IJSRuntime JSRuntime
 
-<MudForm @ref="_form" Style="@Style">
+<MudForm @ref="_form" Class="@Class" Style="@Style"
+         IsValid="@IsValid" IsValidChanged="@IsValidChanged">
     @{
         var method = Enum.GetName(Method)?.ToLowerInvariant() ?? "get";
         var action = QueryHelpers.AddQueryString(Action ?? "/", ActionQueries?.Select(kvp =>
@@ -37,7 +38,16 @@
     public Dictionary<string, object?>? ActionQueries { get; set; }
 
     [Parameter]
+    public string? Class { get; set; }
+
+    [Parameter]
     public string? Style { get; set; }
+
+    [Parameter]
+    public bool IsValid { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> IsValidChanged { get; set; }
 
     public async Task Submit()
     {

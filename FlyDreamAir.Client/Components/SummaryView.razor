@@ -3,9 +3,19 @@
 <MudStack Style="position: relative; width: 100%" AlignItems="@AlignItems.End">
     @if (Journey is null)
     {
-        <MudText Align="@Align.Center" Style="position: absolute; width: 100%;">
-            <b>Please select a flight.</b>
-        </MudText>
+        if (RequiresSelection)
+        {
+            <MudText Align="@Align.Center" Style="position: absolute; width: 100%;">
+                <b>Please select a flight.</b>
+            </MudText>
+        }
+        else
+        {
+            <MudStack AlignItems="@AlignItems.Center" style="position: absolute; width: 100%;">
+                <MudProgressCircular Indeterminate="true"
+                                     Style="margin-left: auto; margin-right: auto;" />
+            </MudStack>
+        }
     }
 
     <MudPaper Style="@("border-radius: 10px;"
@@ -30,7 +40,9 @@
                             // Capture the current value for the children.
                             var currentFlightIndex = i;
                             <MudText Style="overflow: hidden; white-space: nowrap;">
-                                @if (FlightIndex.HasValue && currentFlightIndex != FlightIndex)
+                                @if (FlightIndex.HasValue
+                                    && FlightIndex >= 0
+                                    && currentFlightIndex != FlightIndex)
                                 {
                                     @flight.FlightId
                                 }
@@ -135,4 +147,7 @@
 
     [Parameter]
     public int? FlightIndex { get; set; }
+
+    [Parameter]
+    public bool RequiresSelection { get; set; }
 }

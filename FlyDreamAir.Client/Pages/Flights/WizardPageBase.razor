@@ -1,4 +1,5 @@
 ﻿@using FlyDreamAir.Data.Model
+@using System.Globalization
 @inject BookingsService BookingsService
 
 @{
@@ -85,17 +86,20 @@
 @if ((IsSkippable || EnableNextButton) && _flights is not null && _addOns is not null)
 {
     <MudHtmlForm Action="@FormAction"
-                 Method="@HtmlFormMethod.Get"
+                 Method="@FormMethod"
                  Style="display: none;"
                  @ref="_form">
         <input name="from" value="@From" />
         <input name="to" value="@To" />
-        <input name="date" value="@Date" />
-        <input name="returnDate" value="@ReturnDate" />
+        <input name="date" value="@(Date
+            .ToString(CultureInfo.InvariantCulture.DateTimeFormat))" />
+        <input name="returnDate" value="@(ReturnDate?
+            .ToString(CultureInfo.InvariantCulture.DateTimeFormat))" />
         @foreach (var flight in _flights)
         {
             <input name="flightId" value="@flight.FlightId" />
-            <input name="flightDeparture" value="@flight.DepartureTime" />
+            <input name="flightDeparture" value="@(flight.DepartureTime
+                .ToString(CultureInfo.InvariantCulture.DateTimeFormat))" />
         }
         <input name="flightIndex" value="@NextFlightIndex" />
         @foreach (var addOn in _addOns)
@@ -144,7 +148,7 @@
     public required DateTime[] FlightDepartures { get; init; } = [];
 
     [SupplyParameterFromQuery]
-    public required int FlightIndex { get; init; }
+    public required int FlightIndex { get; set; }
 
     [SupplyParameterFromQuery(Name = "addOnId")]
     public Guid[] AddOnIds { get; init; } = [];
@@ -155,9 +159,9 @@
     [SupplyParameterFromQuery(Name = "addOnAmount")]
     public decimal[] AddOnAmounts { get; init; } = [];
 
-    protected IReadOnlyList<Flight>? Flights => _flights;
-    protected IReadOnlyList<PreOrderedAddOn>? PreOrderedAddOns => _addOns;
-    protected Journey? Journey => _journey;
+    protected List<Flight>? Flights { get => _flights; set => _flights = value; }
+    protected List<PreOrderedAddOn>? PreOrderedAddOns { get => _addOns; set => _addOns = value; }
+    protected Journey? Journey { get => _journey; set => _journey = value; }
 
     protected MudHtmlForm? Form => _form;
     protected bool? IsMobile => _isMobile;
@@ -169,6 +173,7 @@
     protected virtual string NextButtonLabel => (IsSkippable && !EnableNextButton) ?
                                                     "Skip" : "Next";
     protected virtual string FormAction => throw new NotImplementedException();
+    protected virtual HtmlFormMethod FormMethod => HtmlFormMethod.Get;
     protected virtual int NextFlightIndex => FlightIndex;
     protected virtual RenderFragment? FormAdditionalContent => null;
 

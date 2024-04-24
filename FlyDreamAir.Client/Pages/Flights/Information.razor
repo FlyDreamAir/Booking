@@ -1,5 +1,6 @@
 ﻿@page "/Flights/Information"
 @using System.ComponentModel.DataAnnotations
+@using System.Globalization
 @inherits WizardPageBase
 
 <PageTitle>Information</PageTitle>
@@ -72,7 +73,9 @@
 
     protected override bool EnableNextButton => _valid;
 
-    protected override string FormAction => "/Flights/Payment";
+    protected override string FormAction => "/api/Bookings/CreateBooking";
+
+    protected override HtmlFormMethod FormMethod => HtmlFormMethod.Post;
 
     protected override RenderFragment FormAdditionalContent =>
         @<Wrapper>
@@ -80,10 +83,8 @@
             <input name="lastName" value="@_lastName" />
             <input name="email" value="@_email" />
             <input name="passportId" value="@_passportId" />
-            <input name="date"
-                   value="@(_dateOfBirth?
-                                .ToString("yyyy-MM-dd",
-                                    System.Globalization.CultureInfo.InvariantCulture))"
+            <input name="dateOfBirth"
+                   value="@(_dateOfBirth?.ToString(CultureInfo.InvariantCulture.DateTimeFormat))"
                    hidden />
         </Wrapper>;
 

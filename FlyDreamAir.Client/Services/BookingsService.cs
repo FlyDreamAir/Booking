@@ -60,6 +60,16 @@ public class BookingsService
         }))!;
     }
 
+    public Task<Booking> GetBookingAsync(
+        Guid id
+    )
+    {
+        return _httpClient.GetFromJsonAsync<Booking>(_GetApiUri(new()
+        {
+            { nameof(id), id }
+        }))!;
+    }
+
     public Task<Flight> GetFlightAsync(
         string flightId,
         DateTimeOffset departureTime,

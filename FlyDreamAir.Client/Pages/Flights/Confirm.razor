@@ -1,0 +1,55 @@
+﻿@page "/Flights/Confirm"
+@using FlyDreamAir.Data.Model
+@inherits WizardPageBase
+@inject BookingsService BookingsService
+
+<PageTitle>Confirm your booking</PageTitle>
+
+@{
+    base.BuildRenderTree(__builder);
+}
+
+@code {
+    private Booking? _booking;
+
+    [SupplyParameterFromQuery]
+    public required Guid BookingId { get; set; }
+
+    private RenderFragment _Content(bool isMobile) =>
+        @<MudStack Class="w-100 p-4" AlignItems="@AlignItems.Center">
+            <MudText>
+                Please click on "Next" if you have made this booking to proceed to payment.
+            </MudText>
+            @if (isMobile)
+            {
+                <SummaryView Journey="@Journey"
+                             AddOns="@PreOrderedAddOns"
+                             FlightIndex="@FlightIndex" />
+            }
+        </MudStack>;
+
+    protected override bool EnableNextButton => true;
+
+    protected override string FormAction => "/api/Bookings/ConfirmBooking";
+    protected override HtmlFormMethod FormMethod => HtmlFormMethod.Post;
+    protected override RenderFragment? FormAdditionalContent =>
+        @<input name="id" value="@BookingId" />;
+
+    protected override RenderFragment? MobileContent => _Content(true);
+    protected override RenderFragment? DesktopContent => _Content(false);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_booking is null)
+        {
+            FlightIndex = -1;
+            _booking = await BookingsService.GetBookingAsync(BookingId);
+            Journey = _booking.Journey;
+            PreOrderedAddOns = _booking.AddOns;
+            Flights = _booking.Journey.Flights.Concat(_booking.Journey.ReturnFlights).ToList();
+            StateHasChanged();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+}
