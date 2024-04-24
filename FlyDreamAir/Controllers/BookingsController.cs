@@ -1,8 +1,11 @@
 ﻿using FlyDreamAir.Data;
 using FlyDreamAir.Data.Model;
 using FlyDreamAir.Services;
+using FlyDreamAir.Utils;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
+using System.Security.Claims;
 
 namespace FlyDreamAir.Controllers;
 
@@ -10,19 +13,25 @@ namespace FlyDreamAir.Controllers;
 public class BookingsController: ControllerBase
 {
     private readonly ApplicationDbContext _dbContext;
+    private readonly IEmailService _emailService;
     private readonly AddOnService _addOnService;
     private readonly AirportsService _airportsService;
+    private readonly BookingsService _bookingsService;
     private readonly FlightsService _flightsService;
 
     public BookingsController(
         DbContextOptions<ApplicationDbContext> dbContextOptions,
+        IEmailService emailService,
         AddOnService addOnService,
         AirportsService airportsService,
+        BookingsService bookingsService,
         FlightsService flightsService)
     {
         _dbContext = new(dbContextOptions);
+        _emailService = emailService;
         _addOnService = addOnService;
         _airportsService = airportsService;
+        _bookingsService = bookingsService;
         _flightsService = flightsService;
     }
 
@@ -51,7 +60,7 @@ public class BookingsController: ControllerBase
         DateTimeOffset departureTime
     )
     {
-        var addOn = await _addOnService.GetAddOnAsync(id, flightId, departureTime);
+        var addOn = await _addOnService.GetAddOnAsync(id, flightId, departureTime, false);
         if (addOn is not null)
         {
             return Ok(addOn);
@@ -77,6 +86,27 @@ public class BookingsController: ControllerBase
             return Ok(airport);
         }
         return NotFound();
+    }
+
+    [HttpGet(nameof(GetBooking))]
+    public async Task<ActionResult<Booking>> GetBooking(
+        [FromQuery]
+        Guid id
+    )
+    {
+        try
+        {
+            var booking = await _bookingsService.GetBookingAsync(id);
+            if (booking is null)
+            {
+                return NotFound();
+            }
+            return Ok(booking);
+        }
+        catch
+        {
+            return NotFound();
+        }
     }
 
     [HttpGet(nameof(GetFlight))]
@@ -121,5 +151,164 @@ public class BookingsController: ControllerBase
     )
     {
         return Ok(_addOnService.GetSeatsAsync(flightId, departureTime, seatType));
+    }
+
+
+    [HttpPost(nameof(CreateBooking))]
+    public async Task<ActionResult> CreateBooking(
+        [FromForm]
+        string firstName,
+        [FromForm]
+        string lastName,
+        [FromForm]
+        string email,
+        [FromForm]
+        string passportId,
+        [FromForm]
+        DateTimeOffset dateOfBirth,
+        [FromForm]
+        string from,
+        [FromForm]
+        string to,
+        [FromForm]
+        DateTimeOffset date,
+        [FromForm]
+        DateTimeOffset? returnDate,
+        [FromForm(Name = "flightId")]
+        IList<string> flightIds,
+        [FromForm(Name = "flightDeparture")]
+        IList<DateTimeOffset> flightDepartures,
+        [FromForm(Name = "addOnId")]
+        IList<Guid> addOnIds,
+        [FromForm(Name = "addOnFlightIndex")]
+        IList<int> addOnFlightIndexes,
+        [FromForm(Name = "addOnAmount")]
+        IList<decimal> addOnAmounts
+    )
+    {
+        var signedInEmail = HttpContext.User.FindFirst(ClaimTypes.Email)?.Value;
+        var verified = signedInEmail == email;
+        Guid bookingId;
+
+        try
+        {
+            // Hack for ASP.NET's lack of DateTimeOffset support
+            dateOfBirth = DateTimeOffset
+                .Parse(Request.Form[nameof(dateOfBirth)]!, CultureInfo.InvariantCulture);
+            date = DateTimeOffset
+                .Parse(Request.Form[nameof(date)]!, CultureInfo.InvariantCulture);
+
+            if (!string.IsNullOrEmpty(Request.Form[nameof(returnDate)]))
+            {
+                returnDate = DateTimeOffset
+                    .Parse(Request.Form[nameof(returnDate)]!, CultureInfo.InvariantCulture);
+            }
+
+            flightDepartures = Request.Form["flightDeparture"]
+                .Select(kvp => DateTimeOffset.Parse(kvp!, CultureInfo.InvariantCulture))
+                .ToList();
+
+            bookingId = await _bookingsService.CreateBookingAsync(
+                firstName,
+                lastName,
+                email,
+                passportId,
+                DateOnly.FromDateTime(dateOfBirth.DateTime),
+                from,
+                to,
+                date,
+                returnDate,
+                flightIds,
+                flightDepartures,
+                addOnIds,
+                addOnFlightIndexes,
+                addOnAmounts,
+                verified
+            );
+        }
+        catch
+        {
+            return this.RedirectWithQuery("/Flights/Information",
+                Request.Form.SelectMany(kvp =>
+                    kvp.Value.Select(str =>
+                        new KeyValuePair<string, object?>(kvp.Key, str)))
+                .Concat(new Dictionary<string, object?> { {
+                        "error",
+                        "Failed to create your booking. Please check your details and try again."
+                    } })
+                );
+        }
+
+        if (verified)
+        {
+            return this.RedirectWithQuery("/Flights/Payment", new Dictionary<string, object?>()
+            {
+                { "bookingId", bookingId }
+            });
+        }
+        else
+        {
+            var link = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/" +
+                $"Flights/Confirm?bookingId={bookingId}";
+            await _emailService.SendEmailAsync(
+                to,
+                "Confirm your booking",
+                $"Please confirm your booking by clicking here: {link}",
+                $@"Please confirm your booking by <a href=""{link}"">clicking here</a>."
+            );
+            return Redirect("/Flights/CheckEmail");
+        }
+    }
+
+    [HttpPost(nameof(ConfirmBooking))]
+    public async Task<ActionResult> ConfirmBooking(
+        [FromForm]
+        Guid id
+    )
+    {
+        try
+        {
+            await _bookingsService.ConfirmBookingAsync(id);
+
+            return this.RedirectWithQuery("/Flights/Payment", new Dictionary<string, object?>()
+            {
+                { "bookingId", id }
+            });
+        }
+        catch
+        {
+            return BadRequest();
+        }
+    }
+
+    [HttpPost(nameof(PayBooking))]
+    public async Task<ActionResult> PayBooking(
+        [FromForm]
+        Guid id,
+        [FromForm]
+        string cardName,
+        [FromForm]
+        string cardNumber,
+        [FromForm]
+        string cardExpiration,
+        [FromForm]
+        string cardCvv
+    )
+    {
+        try
+        {
+            await _bookingsService.PayBookingAsync(id,
+                cardName, cardNumber, cardExpiration, cardCvv);
+
+            return Redirect("/Bookings");
+        }
+        catch
+        {
+            return this.RedirectWithQuery("/Flights/Payment", new Dictionary<string, object?>()
+            {
+                { "bookingId", id },
+                { "error", "Payment failed. Please check your card details and try again." }
+            });
+        }
     }
 }

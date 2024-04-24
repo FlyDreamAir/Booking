@@ -49,14 +49,23 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.Requ
     .AddSignInManager()
     .AddDefaultTokenProviders();
 
-builder.Services.AddSingleton(new PostmarkClient(builder.Configuration["ApiKeys:Postmark"]
-    ?? throw new InvalidOperationException("Postmark API key not found.")));
-builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityPostmarkEmailSender>();
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddSingleton<IEmailService, NoOpEmailService>();
+}
+else
+{
+    builder.Services.AddSingleton(new PostmarkClient(builder.Configuration["ApiKeys:Postmark"]
+        ?? throw new InvalidOperationException("Postmark API key not found.")));
+    builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityPostmarkEmailSender>();
+    builder.Services.AddSingleton<IEmailService, PostmarkEmailService>();
+}
 
 builder.Services.AddControllers();
 
 builder.Services.AddScoped<AddOnService>();
 builder.Services.AddScoped<AirportsService>();
+builder.Services.AddScoped<BookingsService>();
 builder.Services.AddScoped<FlightsService>();
 
 // Hacks for prerendering to work.

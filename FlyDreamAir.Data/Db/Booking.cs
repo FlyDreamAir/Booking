@@ -11,4 +11,10 @@ public class Booking
 
     [Required]
     public required Customer Customer { get; set; }
+
+    [Required]
+    public required string From { get; set; }
+
+    [Required]
+    public required string To { get; set; }
 }

@@ -21,5 +21,8 @@ public class Customer
     public required string LastName { get; set; }
 
     [Required]
+    public required string PassportId { get; set; }
+
+    [Required]
     public required DateOnly DateOfBirth { get; set; }
 }

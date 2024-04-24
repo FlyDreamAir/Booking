@@ -75,7 +75,8 @@ public class AddOnService
     public async Task<Model.AddOn?> GetAddOnAsync(
         Guid id,
         string flightId,
-        DateTimeOffset departureTime
+        DateTimeOffset departureTime,
+        bool includeUnavailableSeats
     )
     {
         var addOn = await _dbContext.AddOns.SingleOrDefaultAsync(a => a.Id == id);
@@ -103,7 +104,7 @@ public class AddOnService
                         && t.Seat == seat)
                     .AnyAsync();
 
-                if (!available)
+                if (!available && !includeUnavailableSeats)
                 {
                     return null;
                 }
