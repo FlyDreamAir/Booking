@@ -253,7 +253,7 @@ public class BookingsController: ControllerBase
             await _emailService.SendEmailAsync(
                 email,
                 "Confirm your booking",
-                $"Please confirm your booking by clicking here: {link}",
+                $"Please confirm your booking by visiting: {link}",
                 $@"Please confirm your booking by <a href=""{link}"">clicking here</a>."
             );
             return Redirect("/Flights/CheckEmail");
