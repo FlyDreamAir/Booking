@@ -80,8 +80,7 @@
                             Class="FlyDreamAir-DateSelect"
                             PickerVariant="@(isMobile && !IsComponent ?
                                 PickerVariant.Dialog : PickerVariant.Inline)"
-                            TransformOrigin="@(isMobile ?
-                                Origin.CenterLeft : Origin.TopLeft)" />;
+                            TransformOrigin="@Origin.CenterLeft" />;
         RenderFragment<MudHtmlForm> submitButton = (form) =>
             @<MudButton Variant="@Variant.Filled"
                         Color="@Color.Primary"
