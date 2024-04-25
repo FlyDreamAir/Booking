@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "master"
+      - "dev/**"
+  pull_request:
+    branches:
+      - "master"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Setup tools
+        run: |
+          dotnet workload install wasm-tools
+          dotnet tool install dotnet-ef --global
+
+      - name: Setup PostgreSQL
+        run: |
+          sudo apt install -y postgresql-common
+          yes | sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
+          sudo apt install -y postgresql-16
+          sudo systemctl start postgresql.service
+          sudo -u postgres bash -c "psql -c \"CREATE USER sephera WITH PASSWORD 'ci';\""
+          sudo -u postgres bash -c "psql -c \"CREATE DATABASE booking;\""
+          sudo -u postgres bash -c "psql -c \"GRANT ALL ON DATABASE booking TO sephera;\""
+          sudo -u postgres bash -c "psql -c \"ALTER DATABASE booking OWNER TO sephera;\""
+
+      - name: Setup dummy secrets
+        run: |
+          dotnet user-secrets set ConnectionStrings:DefaultConnection "Host=localhost; Database=booking; Username=sephera; Password=ci" --project FlyDreamAir/FlyDreamAir.csproj
+          dotnet user-secrets set ApiKeys:Postmark "Dummy API Key" --project FlyDreamAir/FlyDreamAir.csproj
+          dotnet user-secrets set Authentication:Google:ClientId "Dummy API Key" --project FlyDreamAir/FlyDreamAir.csproj
+          dotnet user-secrets set Authentication:Google:ClientSecret "Dummy API Key" --project FlyDreamAir/FlyDreamAir.csproj
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build and publish a release
+        run: |
+          dotnet build FlyDreamAir/FlyDreamAir.csproj -c Release --no-restore
+          dotnet publish FlyDreamAir/FlyDreamAir.csproj -c Release -o out --no-build
+
+      - name: Run test server
+        run: |
+          set +e
+          dotnet ef database update --project FlyDreamAir/FlyDreamAir.csproj
+          timeout 1m dotnet run --project FlyDreamAir/FlyDreamAir.csproj -c Release --no-build
+          RETURN_CODE=$?
+          if [ "$RETURN_CODE" -eq "124" ]; then
+            # The server ran for 1m without failing
+            exit 0
+          else
+            exit 1
+          fi
+
+      - name: Publish artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: booking
+          path: out/**
