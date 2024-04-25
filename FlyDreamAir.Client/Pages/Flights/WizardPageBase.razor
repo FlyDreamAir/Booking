@@ -41,6 +41,10 @@
             @DesktopContent
             <MudStack Style="min-width: 33%;" AlignItems="@AlignItems.End">
                 <SummaryView Journey="@_journey" AddOns="_addOns" FlightIndex="@FlightIndex" />
+                @if (!string.IsNullOrEmpty(Error))
+                {
+                    <MudText Color="@Color.Error">@Error</MudText>
+                }
                 @nextButton
             </MudStack>
         </MudStack>
@@ -49,7 +53,8 @@
         @{
             _isMobile = true;
         }
-        <MudStack Style="@($@"
+        <MudStack Spacing="0"
+                  Style="@($@"
                       padding-bottom: calc(4rem + {MobileBottomPadding});
                       padding-top: {MobileTopPadding};
                   ")">
@@ -62,6 +67,10 @@
                       ")">
                 @MobileTopContent
             </MudStack>
+            @if (!string.IsNullOrEmpty(Error))
+            {
+                <MudText Class="px-4 pt-4" Color="@Color.Error">@Error</MudText>
+            }
             @MobileContent
             <MudStack Style="@($@"
                           position: fixed;
@@ -158,6 +167,9 @@
 
     [SupplyParameterFromQuery(Name = "addOnAmount")]
     public decimal[] AddOnAmounts { get; init; } = [];
+
+    [SupplyParameterFromQuery(Name = "error")]
+    public string? Error { get; init; }
 
     protected List<Flight>? Flights { get => _flights; set => _flights = value; }
     protected List<PreOrderedAddOn>? PreOrderedAddOns { get => _addOns; set => _addOns = value; }
