@@ -104,6 +104,49 @@
                 Please sign in to access your booked flights.
             </MudText>
         </MudStack>;
+
+    RenderFragment<bool> summaryAndActionsView = (bool isMobile) =>
+        @<MudStack Class="w-100 p-4"
+                   AlignItems="@(isMobile ? AlignItems.Center : AlignItems.End)">
+            <SummaryView Journey="@(_booking?.Journey)"
+                         AddOns="@(_booking?.AddOns)"
+                         FlightIndex="-1"
+                         ShowFlightFromTo="false" />
+            <MudButton Color="@Color.Error"
+                       Style="border-radius: 100px; min-width: 33%;"
+                       Variant="@Variant.Filled">
+                Cancel Booking
+            </MudButton>
+        </MudStack>;
+
+    RenderFragment<bool> flightsView = (bool isMobile) =>
+        @<MudStack Class="w-100 p-4">
+            @if (_booking?.Journey is not null)
+            {
+                foreach (var flight in _booking.Journey.Flights
+                    .Concat(_booking.Journey.ReturnFlights))
+                {
+                    var dummyJourney = new Journey()
+                    {
+                        From = flight.From,
+                        To = flight.To,
+                        IsTwoWay = false,
+                        BaseCost = flight.BaseCost,
+                        EstimatedTime = flight.EstimatedTime,
+                        ReturnEstimatedTime = TimeSpan.Zero,
+                        Flights = [ flight ],
+                        ReturnFlights = []
+                    };
+                    <JourneyView Journey="@dummyJourney" ShowStops="false" />
+                }
+            }
+            else
+            {
+                <MudStack Class="w-100" AlignItems="@AlignItems.Center">
+                    <MudProgressCircular Indeterminate="true" Class="m-5" />
+                </MudStack>
+            }
+        </MudStack>;
 }
 
 @if (!BookingId.HasValue)
@@ -140,7 +183,30 @@
 }
 else
 {
-
+    <DeviceView>
+        <Desktop>
+            <MudText Typo="@Typo.h4"
+                     Align="@Align.Center"
+                     Color="@Color.Primary"
+                     Class="m-3"
+                     Style="user-select: none;">
+                Your flights
+            </MudText>
+            <MudStack Row="true" Class="m-2" Justify="@Justify.SpaceBetween" Spacing="10">
+                @flightsView(false)
+                <MudStack Style="min-width: 33%;" AlignItems="@AlignItems.End">
+                    @summaryAndActionsView(false)
+                </MudStack>
+            </MudStack>
+        </Desktop>
+        <Mobile>
+            <MudStack Spacing="2">
+                @summaryAndActionsView(true)
+                <MudText Typo="@Typo.h6" Class="p-4">Flights</MudText>
+                @flightsView(true)
+            </MudStack>
+        </Mobile>
+    </DeviceView>
 }
 
 @code {
