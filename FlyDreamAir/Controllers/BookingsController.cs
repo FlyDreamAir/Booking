@@ -2,6 +2,7 @@
 using FlyDreamAir.Data.Model;
 using FlyDreamAir.Services;
 using FlyDreamAir.Utils;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
@@ -86,6 +87,25 @@ public class BookingsController: ControllerBase
             return Ok(airport);
         }
         return NotFound();
+    }
+
+    [HttpGet(nameof(GetBookings))]
+    [Authorize]
+    public ActionResult<IAsyncEnumerable<Booking>> GetBookings(
+        [FromQuery]
+        bool includePast,
+        [FromQuery]
+        bool includeUnpaid
+    )
+    {
+        var email = HttpContext.User.FindFirst(ClaimTypes.Email)?.Value;
+        if (email is null)
+        {
+            return Unauthorized();
+        }
+        return Ok(_bookingsService.GetBookingsAsync(
+            email, includePast, includeUnpaid
+        ));
     }
 
     [HttpGet(nameof(GetBooking))]

@@ -239,6 +239,54 @@ public class BookingsService
         await transaction.CommitAsync();
     }
 
+    public async IAsyncEnumerable<Model.Booking> GetBookingsAsync(
+        string email,
+        bool includePast,
+        bool includeUnpaid
+    )
+    {
+        var bookings = _dbContext.Bookings.Include(b => b.Customer)
+            .Where(b => b.Customer.Email == email);
+
+        var now = DateTime.UtcNow;
+
+        if (!includePast)
+        {
+            bookings = bookings.Where(b =>
+                _dbContext.Tickets.Include(t => t.Flight).Include(t => t.Booking)
+                    .Where(t => t.Booking.Id == b.Id)
+                    .Select(t => t.Flight.DepartureTime)
+                    .Max()
+                > now
+            );
+        }
+
+        if (!includeUnpaid)
+        {
+            bookings = bookings.Where(b =>
+                _dbContext.Payments.Include(p => p.Booking)
+                    .Where(p => p.Booking.Id == b.Id)
+                    .Sum(p => p.Amount)
+                >=  _dbContext.Tickets.Include(t => t.Flight).Include(t => t.Flight.Flight)
+                        .Include(t => t.Booking)
+                        .Where(t => t.Booking.Id == b.Id)
+                        .Sum(t => t.Flight.Flight.BaseCost)
+                    + _dbContext.OrderedAddOns.Include(oa => oa.Ticket)
+                        .Include(oa => oa.Ticket.Booking)
+                        .Include(oa => oa.AddOn)
+                        .Where(oa => oa.Ticket.Booking.Id == b.Id)
+                        .Sum(oa => oa.AddOn.Price * oa.Amount)
+            );
+        }
+
+        var ids = bookings.Select(b => b.Id);
+
+        foreach (var id in await ids.ToListAsync())
+        {
+            yield return await GetBookingAsync(id);
+        }
+    }
+
     public async Task<Model.Booking> GetBookingAsync(
         Guid id
     )
