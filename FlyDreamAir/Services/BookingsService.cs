@@ -8,6 +8,8 @@ namespace FlyDreamAir.Services;
 
 public class BookingsService
 {
+    private const string _unverifiedSuffix = ".unverified.fly.trungnt2910.com";
+
     private readonly ApplicationDbContext _dbContext;
     private readonly AddOnService _addOnService;
     private readonly CardService _cardService;
@@ -75,7 +77,7 @@ public class BookingsService
                 DateOfBirth = dateOfBirth,
                 Email = verified ? email :
                     $"{Convert.ToBase64String(Encoding.UTF8.GetBytes(email))}" +
-                        $"@{Guid.NewGuid()}.unverified.fly.trungnt2910.com"
+                        $"@{Guid.NewGuid()}{_unverifiedSuffix}"
             };
 
             await _dbContext.Customers.AddAsync(customer);
@@ -203,7 +205,7 @@ public class BookingsService
             .SingleAsync(b => b.Id == id);
 
         var customer = booking.Customer;
-        var unverified = booking.Customer.Email.EndsWith(".unverified.fly.trungnt2910.com");
+        var unverified = booking.Customer.Email.EndsWith(_unverifiedSuffix);
 
         if (!unverified)
         {
@@ -364,6 +366,27 @@ public class BookingsService
             },
             AddOns = addOns
         };
+    }
+
+    public async Task<string?> GetBookingEmailAsync(
+        Guid id
+    )
+    {
+        var booking = await _dbContext.Bookings
+            .Include(b => b.Customer)
+            .SingleOrDefaultAsync(b => b.Id == id);
+
+        if (booking is null)
+        {
+            return null;
+        }
+
+        if (booking.Customer.Email.EndsWith(_unverifiedSuffix))
+        {
+            return null;
+        }
+
+        return booking.Customer.Email;
     }
 
     public async Task PayBookingAsync(
