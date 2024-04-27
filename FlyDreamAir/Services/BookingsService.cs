@@ -8,6 +8,8 @@ namespace FlyDreamAir.Services;
 
 public class BookingsService
 {
+    private const string _unverifiedSuffix = ".unverified.fly.trungnt2910.com";
+
     private readonly ApplicationDbContext _dbContext;
     private readonly AddOnService _addOnService;
     private readonly CardService _cardService;
@@ -75,7 +77,7 @@ public class BookingsService
                 DateOfBirth = dateOfBirth,
                 Email = verified ? email :
                     $"{Convert.ToBase64String(Encoding.UTF8.GetBytes(email))}" +
-                        $"@{Guid.NewGuid()}.unverified.fly.trungnt2910.com"
+                        $"@{Guid.NewGuid()}{_unverifiedSuffix}"
             };
 
             await _dbContext.Customers.AddAsync(customer);
@@ -203,7 +205,7 @@ public class BookingsService
             .SingleAsync(b => b.Id == id);
 
         var customer = booking.Customer;
-        var unverified = booking.Customer.Email.EndsWith(".unverified.fly.trungnt2910.com");
+        var unverified = booking.Customer.Email.EndsWith(_unverifiedSuffix);
 
         if (!unverified)
         {
@@ -237,6 +239,118 @@ public class BookingsService
 
         await _dbContext.SaveChangesAsync();
         await transaction.CommitAsync();
+    }
+
+    public async Task<Guid> RequestCancelBookingAsync(
+        Guid id
+    )
+    {
+        var booking = _dbContext.Bookings.Single(b => b.Id == id);
+
+        booking.CancellationId = Guid.NewGuid();
+        _dbContext.Update(booking);
+        await _dbContext.SaveChangesAsync();
+
+        return booking.CancellationId.Value;
+    }
+
+    public async Task CancelBookingAsync(
+        Guid id,
+        Guid cancellationId
+    )
+    {
+        var booking = _dbContext.Bookings.Single(
+            b => b.Id == id && b.CancellationId == cancellationId);
+
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync();
+
+        var now = DateTime.UtcNow;
+        if (await _dbContext.Tickets.Include(t => t.Flight).Include(t => t.Booking)
+                .Where(t => t.Booking.Id == booking.Id)
+                .Where(t => t.Flight.DepartureTime <= now)
+                .AnyAsync())
+        {
+            throw new InvalidOperationException("Too late to cancel flight.");
+        }
+
+        await _dbContext.OrderedAddOns
+            .Include(oa => oa.Ticket)
+            .Include(oa => oa.Ticket.Booking)
+            .Where(oa => oa.Ticket.Booking.Id == booking.Id)
+            .ExecuteDeleteAsync();
+
+        await _dbContext.Tickets
+            .Include(t => t.Booking)
+            .Where(t => t.Booking.Id == booking.Id)
+            .ExecuteDeleteAsync();
+
+        var creditCardPayments = _dbContext.Payments
+            .Include(p => p.Booking)
+            .Where(p => p.Type == nameof(CreditCardPayment)
+                && p.Booking.Id == booking.Id)
+            .OfType<CreditCardPayment>();
+
+        await foreach (var payment in creditCardPayments.ToAsyncEnumerable())
+        {
+            await _cardService.RefundAsync(
+                payment.CardName, payment.CardNumber, payment.Amount
+            );
+        }
+
+        await creditCardPayments.ExecuteDeleteAsync();
+
+        await _dbContext.Bookings.Where(b => b.Id == booking.Id)
+            .ExecuteDeleteAsync();
+
+        await transaction.CommitAsync();
+    }
+
+    public async IAsyncEnumerable<Model.Booking> GetBookingsAsync(
+        string email,
+        bool includePast,
+        bool includeUnpaid
+    )
+    {
+        var bookings = _dbContext.Bookings.Include(b => b.Customer)
+            .Where(b => b.Customer.Email == email);
+
+        var now = DateTime.UtcNow;
+
+        if (!includePast)
+        {
+            bookings = bookings.Where(b =>
+                _dbContext.Tickets.Include(t => t.Flight).Include(t => t.Booking)
+                    .Where(t => t.Booking.Id == b.Id)
+                    .Select(t => t.Flight.DepartureTime)
+                    .Max()
+                > now
+            );
+        }
+
+        if (!includeUnpaid)
+        {
+            bookings = bookings.Where(b =>
+                _dbContext.Payments.Include(p => p.Booking)
+                    .Where(p => p.Booking.Id == b.Id)
+                    .Sum(p => p.Amount)
+                >=  _dbContext.Tickets.Include(t => t.Flight).Include(t => t.Flight.Flight)
+                        .Include(t => t.Booking)
+                        .Where(t => t.Booking.Id == b.Id)
+                        .Sum(t => t.Flight.Flight.BaseCost)
+                    + _dbContext.OrderedAddOns.Include(oa => oa.Ticket)
+                        .Include(oa => oa.Ticket.Booking)
+                        .Include(oa => oa.AddOn)
+                        .Where(oa => oa.Ticket.Booking.Id == b.Id)
+                        .Sum(oa => oa.AddOn.Price * oa.Amount)
+            );
+        }
+
+        var ids = bookings.Select(b => b.Id);
+
+        foreach (var id in await ids.ToListAsync())
+        {
+            yield return await GetBookingAsync(id);
+        }
     }
 
     public async Task<Model.Booking> GetBookingAsync(
@@ -316,6 +430,27 @@ public class BookingsService
             },
             AddOns = addOns
         };
+    }
+
+    public async Task<string?> GetBookingEmailAsync(
+        Guid id
+    )
+    {
+        var booking = await _dbContext.Bookings
+            .Include(b => b.Customer)
+            .SingleOrDefaultAsync(b => b.Id == id);
+
+        if (booking is null)
+        {
+            return null;
+        }
+
+        if (booking.Customer.Email.EndsWith(_unverifiedSuffix))
+        {
+            return null;
+        }
+
+        return booking.Customer.Email;
     }
 
     public async Task PayBookingAsync(

@@ -2,6 +2,7 @@
 using FlyDreamAir.Data.Model;
 using FlyDreamAir.Services;
 using FlyDreamAir.Utils;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
@@ -86,6 +87,25 @@ public class BookingsController: ControllerBase
             return Ok(airport);
         }
         return NotFound();
+    }
+
+    [HttpGet(nameof(GetBookings))]
+    [Authorize]
+    public ActionResult<IAsyncEnumerable<Booking>> GetBookings(
+        [FromQuery]
+        bool includePast,
+        [FromQuery]
+        bool includeUnpaid
+    )
+    {
+        var email = HttpContext.User.FindFirst(ClaimTypes.Email)?.Value;
+        if (email is null)
+        {
+            return Unauthorized();
+        }
+        return Ok(_bookingsService.GetBookingsAsync(
+            email, includePast, includeUnpaid
+        ));
     }
 
     [HttpGet(nameof(GetBooking))]
@@ -252,8 +272,8 @@ public class BookingsController: ControllerBase
                 $"Flights/Confirm?bookingId={bookingId}";
             await _emailService.SendEmailAsync(
                 email,
-                "Confirm your booking",
-                $"Please confirm your booking by clicking here: {link}",
+                "FlyDreamAir | Confirm your booking",
+                $"Please confirm your booking by visiting: {link}",
                 $@"Please confirm your booking by <a href=""{link}"">clicking here</a>."
             );
             return Redirect("/Flights/CheckEmail");
@@ -297,10 +317,35 @@ public class BookingsController: ControllerBase
     {
         try
         {
+            var booking = await _bookingsService.GetBookingAsync(id);
+            var email = await _bookingsService.GetBookingEmailAsync(id);
+
+            if (booking is null || email is null)
+            {
+                throw new InvalidOperationException("Invalid booking");
+            }
+
             await _bookingsService.PayBookingAsync(id,
                 cardName, cardNumber, cardExpiration, cardCvv);
 
-            return Redirect("/Bookings");
+            var link = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/" +
+                $"Bookings?bookingId={id}";
+            await _emailService.SendEmailAsync(
+                email,
+                $"FlyDreamAir | Booking: {booking.Journey.From.Id} - {booking.Journey.To.Id}",
+                $"Your booking for a trip to {booking.Journey.To.City} has been processed.\n" +
+                $"To check the status of your booking, please visit: {link}\n" +
+                $"Thank you for choosing FlyDreamAir.",
+                $@"Your booking for a trip to {booking.Journey.To.City} has been processed.<br/>
+                   To check the status of your booking, please
+                   <a href=""{link}"">click here</a>.<br/>
+                   Thank you for choosing FlyDreamAir."
+            );
+
+            return this.RedirectWithQuery("/Bookings", new Dictionary<string, object?>()
+            {
+                { "bookingId", id }
+            });
         }
         catch
         {
@@ -308,6 +353,97 @@ public class BookingsController: ControllerBase
             {
                 { "bookingId", id },
                 { "error", "Payment failed. Please check your card details and try again." }
+            });
+        }
+    }
+
+    [HttpPost(nameof(RequestCancelBooking))]
+    public async Task<ActionResult> RequestCancelBooking(
+        [FromForm]
+        Guid id
+    )
+    {
+        try
+        {
+            var booking = await _bookingsService.GetBookingAsync(id);
+            var email = await _bookingsService.GetBookingEmailAsync(id);
+
+            if (booking is null || email is null)
+            {
+                throw new InvalidOperationException("Invalid booking");
+            }
+
+            var cancellationId = await _bookingsService.RequestCancelBookingAsync(id);
+
+            var link = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/" +
+                $"Flights/Cancel?bookingId={id}&cancellationId={cancellationId}";
+            await _emailService.SendEmailAsync(
+                email,
+                $"FlyDreamAir | Booking Cancellation Confirmation",
+                $"You have requested to cancel your booking for a trip to " +
+                $"{booking.Journey.To.City}.\n" +
+                $"To confirm this cancellation, please visit: {link}\n",
+                $@"You have requested to cancel your booking for a trip to
+                   {booking.Journey.To.City}<br/>
+                   To confirm this cancellation, please
+                   <a href=""{link}"">click here</a>."
+            );
+
+            return this.RedirectWithQuery("/Flights/CheckEmail", new Dictionary<string, object?>()
+            {
+                { "isCancel", true }
+            });
+        }
+        catch
+        {
+            return this.RedirectWithQuery("/Bookings", new Dictionary<string, object?>()
+            {
+                { "bookingId", id },
+                { "error", "Failed to cancel your booking. Please try again later." }
+            });
+        }
+    }
+
+    [HttpPost(nameof(CancelBooking))]
+    public async Task<ActionResult> CancelBooking(
+        [FromForm]
+        Guid id,
+        [FromForm]
+        Guid cancellationid
+    )
+    {
+        try
+        {
+            var booking = await _bookingsService.GetBookingAsync(id);
+            var email = await _bookingsService.GetBookingEmailAsync(id);
+
+            if (booking is null || email is null)
+            {
+                throw new InvalidOperationException("Invalid booking");
+            }
+
+            await _bookingsService.CancelBookingAsync(id, cancellationid);
+
+            await _emailService.SendEmailAsync(
+                email,
+                $"FlyDreamAir | Booking Cancellation: " +
+                $"{booking.Journey.From.Id} - {booking.Journey.To.Id}",
+                $"You have canceled your booking for a trip to {booking.Journey.To.City}.\n" +
+                $"You will be refunded shortly to your previously selected payment method.\n" +
+                $"Thank you for choosing FlyDreamAir.",
+                $@"You have canceled your booking for a trip to {booking.Journey.To.City}.<br/>
+                   You will be refunded shortly to your previously selected payment method.<br/>
+                   Thank you for choosing FlyDreamAir."
+            );
+
+            return Redirect("/Bookings");
+        }
+        catch
+        {
+            return this.RedirectWithQuery("/Bookings", new Dictionary<string, object?>()
+            {
+                { "bookingId", id },
+                { "error", "Failed to cancel your booking. Please try again later." }
             });
         }
     }

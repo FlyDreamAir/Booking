@@ -33,6 +33,7 @@ namespace FlyDreamAir.Data
 
             builder.Entity<Booking>(b =>
             {
+                b.HasIndex(e => e.CancellationId).IsUnique();
                 b.HasOne(e => e.Customer).WithMany();
                 b.HasMany<Payment>().WithOne(e => e.Booking);
             });
