@@ -17,4 +17,6 @@ public class Booking
 
     [Required]
     public required string To { get; set; }
+
+    public Guid? CancellationId { get; set; }
 }

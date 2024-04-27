@@ -241,6 +241,70 @@ public class BookingsService
         await transaction.CommitAsync();
     }
 
+    public async Task<Guid> RequestCancelBookingAsync(
+        Guid id
+    )
+    {
+        var booking = _dbContext.Bookings.Single(b => b.Id == id);
+
+        booking.CancellationId = Guid.NewGuid();
+        _dbContext.Update(booking);
+        await _dbContext.SaveChangesAsync();
+
+        return booking.CancellationId.Value;
+    }
+
+    public async Task CancelBookingAsync(
+        Guid id,
+        Guid cancellationId
+    )
+    {
+        var booking = _dbContext.Bookings.Single(
+            b => b.Id == id && b.CancellationId == cancellationId);
+
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync();
+
+        var now = DateTime.UtcNow;
+        if (await _dbContext.Tickets.Include(t => t.Flight).Include(t => t.Booking)
+                .Where(t => t.Booking.Id == booking.Id)
+                .Where(t => t.Flight.DepartureTime <= now)
+                .AnyAsync())
+        {
+            throw new InvalidOperationException("Too late to cancel flight.");
+        }
+
+        await _dbContext.OrderedAddOns
+            .Include(oa => oa.Ticket)
+            .Include(oa => oa.Ticket.Booking)
+            .Where(oa => oa.Ticket.Booking.Id == booking.Id)
+            .ExecuteDeleteAsync();
+
+        await _dbContext.Tickets
+            .Include(t => t.Booking)
+            .Where(t => t.Booking.Id == booking.Id)
+            .ExecuteDeleteAsync();
+
+        var creditCardPayments = _dbContext.Payments
+            .Include(p => p.Booking)
+            .Where(p => p.Type == nameof(CreditCardPayment)
+                && p.Booking.Id == booking.Id)
+            .OfType<CreditCardPayment>();
+
+        await foreach (var payment in creditCardPayments.ToAsyncEnumerable())
+        {
+            await _cardService.RefundAsync(
+                payment.CardName, payment.CardNumber, payment.Amount
+            );
+        }
+
+        await creditCardPayments.ExecuteDeleteAsync();
+
+        await _dbContext.Bookings.Where(b => b.Id == booking.Id)
+            .ExecuteDeleteAsync();
+
+        await transaction.CommitAsync();
+    }
+
     public async IAsyncEnumerable<Model.Booking> GetBookingsAsync(
         string email,
         bool includePast,
