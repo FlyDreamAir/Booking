@@ -112,11 +112,20 @@
                          AddOns="@(_booking?.AddOns)"
                          FlightIndex="-1"
                          ShowFlightFromTo="false" />
-            <MudButton Color="@Color.Error"
-                       Style="border-radius: 100px; min-width: 33%;"
-                       Variant="@Variant.Filled">
-                Cancel Booking
-            </MudButton>
+            @if (!string.IsNullOrEmpty(Error))
+            {
+                <MudText Color="@Color.Error">@Error</MudText>
+            }
+            <form method="post" action="/api/Bookings/RequestCancelBooking">
+                <MudButton Color="@Color.Error"
+                           Disabled="@(_booking is null)"
+                           Style="border-radius: 100px; min-width: 33%;"
+                           Variant="@Variant.Filled"
+                           ButtonType="@ButtonType.Submit">
+                    Cancel Booking
+                </MudButton>
+                <input name="id" value="@(_booking?.Id)" hidden />
+            </form>
         </MudStack>;
 
     RenderFragment<bool> flightsView = (bool isMobile) =>
@@ -217,6 +226,9 @@ else
 
     [SupplyParameterFromQuery]
     public Guid? BookingId { get; init; }
+
+    [SupplyParameterFromQuery]
+    public string? Error { get; init; }
 
     private void BookingListItem_Click(Booking selected)
     {
