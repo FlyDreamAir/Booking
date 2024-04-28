@@ -1,0 +1,131 @@
+﻿@page "/Account/Register"
+@using Microsoft.AspNetCore.WebUtilities
+@using System.ComponentModel.DataAnnotations
+@inject NavigationManager NavigationManager
+
+<PageTitle>Register</PageTitle>
+
+<BackgroundFiller />
+
+@{
+    string isPersistent = "false";
+
+    string GetExternalLoginUrl(string provider)
+    {
+        return QueryHelpers.AddQueryString("/api/Account/ExternalLogin",
+            new Dictionary<string, string?>()
+            {
+                { nameof(provider), provider },
+                { nameof(isPersistent), isPersistent },
+                { "returnUrl", ReturnUrl }
+            });
+    }
+}
+
+@{
+    RenderFragment<bool> registerForm = (isMobile) =>
+        @<MudHtmlForm Action="/api/Account/Register"
+                      Method="@HtmlFormMethod.Post"
+                      ActionQueries="@(new(){ { "returnUrl", ReturnUrl } })"
+                      Context="form">
+            <MudStack Spacing="1">
+                <MudTextField T="string"
+                              Variant="@Variant.Outlined"
+                              Label="Username"
+                              Required="true"
+                              RequiredError="Please enter your username."
+                              UserAttributes="@(new(){ {"name", "userName"} })" />
+                <MudTextField T="string"
+                              Variant="@Variant.Outlined"
+                              Label="Email"
+                              Required="true"
+                              RequiredError="Please enter your email."
+                              Validation="@(new EmailAddressAttribute()
+                              {
+                                  ErrorMessage = "Please enter a valid email address."
+                              })"
+                              UserAttributes="@(new(){ {"name", "email"} })" />
+                <MudTextField T="string"
+                              Variant="@Variant.Outlined"
+                              Label="Password"
+                              InputType="@InputType.Password"
+                              Required="true"
+                              RequiredError="Please enter your password."
+                              Validation="@(new MinLengthAttribute(8)
+                              {
+                                  ErrorMessage =
+                                      "The password must be at least {1} characters long."
+                              })"
+                              UserAttributes="@(new(){ {"name", "password"} })" />
+                <TermsCheckbox />
+                @if (!string.IsNullOrEmpty(Error))
+                {
+                    <MudText Color="@Color.Error">@Error</MudText>
+                }
+                <MudStack Row="true" Justify="@Justify.Center" Class="m-3">
+                    <MudButton Variant="@Variant.Filled"
+                               Color="@Color.Primary"
+                               Size="@Size.Large"
+                               Style="border-radius: 100px;"
+                               OnClick="form.Submit">
+                        Sign up
+                    </MudButton>
+                </MudStack>
+            </MudStack>
+        </MudHtmlForm>;
+
+    RenderFragment<bool> externalLoginProviders = (isMobile) =>
+        @<MudStack Spacing="1" Class="m-3">
+            <MudButton Variant="@Variant.Filled"
+                       Color="@Color.Transparent"
+                       Size="@Size.Large"
+                       StartIcon="@Icons.Custom.Brands.Google"
+                       Style="background-color: white;"
+                       Href="@(GetExternalLoginUrl("Google"))">
+                Sign In with Google
+            </MudButton>
+        </MudStack>;
+}
+
+<MudText Typo="@Typo.h4"
+         Align="@Align.Center"
+         Color="@Color.Primary"
+         Class="m-3"
+         Style="user-select: none;">
+    Sign up
+</MudText>
+
+<DeviceView>
+    <Desktop>
+        <MudStack Row="true" Class="w-100 p-2">
+            <MudStack Class="w-100 px-16">
+                @registerForm(false)
+            </MudStack>
+            <MudStack Style="min-width: 33%">
+                <MudText Typo="@Typo.h6" Align="@Align.Center">
+                    Use another service to log in
+                </MudText>
+                @externalLoginProviders(false)
+            </MudStack>
+        </MudStack>
+    </Desktop>
+    <Mobile>
+        <MudStack Spacing="1" Class="p-2">
+            @registerForm(true)
+            <MudStack Row="true" Spacing="1" AlignItems="@AlignItems.Center">
+                <MudDivider Style="width: auto;" />
+                <MudText>or</MudText>
+                <MudDivider Style="width: auto;" />
+            </MudStack>
+            @externalLoginProviders(true)
+        </MudStack>
+    </Mobile>
+</DeviceView>
+
+@code {
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? Error { get; set; }
+}
