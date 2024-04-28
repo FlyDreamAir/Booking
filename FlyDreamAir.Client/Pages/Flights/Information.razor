@@ -58,7 +58,10 @@
                                MaxDate="@(DateTime.Today)"
                                Required="true"
                                RequiredError="Please enter your date of birth."
-                               Variant="@Variant.Outlined" />
+                               Variant="@Variant.Outlined"
+                               PickerVariant="@(isMobile ?
+                                   PickerVariant.Dialog : PickerVariant.Inline)"
+                               TransformOrigin="@Origin.CenterLeft" />
             </MudStack>
         </MudForm>;
 

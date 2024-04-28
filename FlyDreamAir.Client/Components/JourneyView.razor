@@ -40,17 +40,20 @@
                 </MudText>
                 <MudDivider Style="height: 2px;" />
                 <MudText Align="Align.Center">
-                    @if (Journey.Flights.Count == 1)
+                    @if (ShowStops)
                     {
-                        <span>Direct</span>
-                    }
-                    else if (Journey.Flights.Count == 2)
-                    {
-                        <span>1 stop</span>
-                    }
-                    else
-                    {
-                        <span>@(Journey.Flights.Count - 1) stops</span>
+                        if (Journey.Flights.Count == 1)
+                        {
+                            <span>Direct</span>
+                        }
+                        else if (Journey.Flights.Count == 2)
+                        {
+                            <span>1 stop</span>
+                        }
+                        else
+                        {
+                            <span>@(Journey.Flights.Count - 1) stops</span>
+                        }
                     }
                 </MudText>
             </MudStack>
@@ -118,4 +121,7 @@
 
     [Parameter]
     public bool IsSelected { get; set; }
+
+    [Parameter]
+    public bool ShowStops { get; set; } = true;
 }

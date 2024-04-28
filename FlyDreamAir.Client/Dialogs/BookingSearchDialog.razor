@@ -1,0 +1,33 @@
+﻿<MudDialog>
+    <DialogContent>
+        <MudInput @bind-Value="@Value"
+                  Style="width: 100%;"
+                  Class="my-2"
+                  Adornment="@Adornment.End"
+                  AdornmentIcon="@Icons.Material.Outlined.Search"
+                  Variant="@Variant.Outlined"
+                  Placeholder="Booking ID, Flight ID, or Airport Code" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Close">Search</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    MudDialogInstance? MudDialog { get; set; }
+
+    [Parameter]
+    public string? Value { get; set; }
+
+    private void Cancel()
+    {
+        MudDialog?.Cancel();
+    }
+
+    private void Close()
+    {
+        MudDialog?.Close(DialogResult.Ok(Value));
+    }
+}

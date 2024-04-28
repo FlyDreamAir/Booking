@@ -60,6 +60,18 @@ public class BookingsService
         }))!;
     }
 
+    public IAsyncEnumerable<Booking> GetBookingsAsync(
+        bool includePast = false,
+        bool includeUnpaid = false
+    )
+    {
+        return _httpClient.GetFromJsonAsAsyncEnumerable<Booking>(_GetApiUri(new()
+        {
+            { nameof(includePast), includePast },
+            { nameof(includeUnpaid), includeUnpaid },
+        }))!;
+    }
+
     public Task<Booking> GetBookingAsync(
         Guid id
     )

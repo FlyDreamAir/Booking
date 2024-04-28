@@ -1,19 +1,332 @@
 ﻿@page "/Bookings"
+@using FlyDreamAir.Data.Model
+@using System.Security.Claims
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject BookingsService BookingsService
+@inject IDialogService DialogService
+@inject NavigationManager NavigationManager
 
 <PageTitle>Bookings</PageTitle>
 
-<DeviceView>
-    <Desktop>
-        <MudText Typo="@Typo.h4"
-                 Align="@Align.Center"
-                 Color="@Color.Primary"
-                 Class="m-3"
-                 Style="user-select: none;">
-            Your flights
-        </MudText>
-    </Desktop>
-</DeviceView>
+@{
+    RenderFragment<bool> authorizedView = (bool isMobile) =>
+        @<MudStack Class="w-100">
+            @if (isMobile)
+            {
+                <MudButton Style="@($@"
+                               border-radius: 100px;
+                               background-color: var(--mud-palette-background-grey);
+                               padding: 1rem;
+                               width: 100%;
+                           ")"
+                           StartIcon="@Icons.Material.Outlined.Menu"
+                           EndIcon="@Icons.Material.Outlined.Search"
+                           Size="@Size.Large"
+                           OnClick="SearchButton_Click">
+                    <MudText Class="w-100" Align="@Align.Left">
+                        @if (!string.IsNullOrWhiteSpace(_filter))
+                        {
+                            @_filter
+                        }
+                        else
+                        {
+                            <Wrapper>
+                                Booking ID, Flight ID, or Airport Code
+                            </Wrapper>
+                        }
+                    </MudText>
+                </MudButton>
+            }
+            else
+            {
+                <MudInput @bind-Value="_filter"
+                          TextChanged="() => Fetch(force: true)"
+                          Style="@($@"
+                              max-width: 400px;
+                              min-width: 33%;
+                          ")"
+                          Class="mx-4"
+                          Adornment="@Adornment.End"
+                          AdornmentIcon="@Icons.Material.Outlined.Search"
+                          Variant="@Variant.Outlined"
+                          Placeholder="Booking ID, Flight ID, or Airport Code" />
+            }
+
+            @if (_bookings is not null && !_isFetching)
+            {
+                @if (_bookings.Count != 0)
+                {
+                    <MudList Clickable="true"
+                             DisableGutters="true"
+                             DisablePadding="true"
+                             Class="m-2">
+                        @foreach (var booking in _bookings)
+                        {
+                            <MudListItem Value="booking"
+                                         DisableRipple="true"
+                                         OnClick="() => BookingListItem_Click(booking)">
+                                <JourneyView Journey="@booking.Journey"
+                                             BadgeVisible="true"
+                                             BadgeColor="@Color.Primary"
+                                             IsSelected="false">
+                                    <Badge>
+                                        <MudText>@booking.Id.GetHashCode().ToString("X")</MudText>
+                                    </Badge>
+                                </JourneyView>
+                            </MudListItem>
+                        }
+                    </MudList>
+                }
+                else
+                {
+                    <MudStack AlignItems="@AlignItems.Center">
+                        <MudText Typo="@Typo.h6" Align="@Align.Center">
+                            <b>
+                                Sorry, we cannot find any booked flights
+                                matching the specified criteria.
+                                Please try again later.
+                            </b>
+                        </MudText>
+                    </MudStack>
+                }
+            }
+            else
+            {
+                <MudStack Class="w-100" AlignItems="@AlignItems.Center">
+                    <MudProgressCircular Indeterminate="true" Class="m-5" />
+                </MudStack>
+            }
+        </MudStack>;
+
+    RenderFragment<bool> unauthorizedView = (bool isMobile) =>
+        @<MudStack Class="w-100 p-4">
+            <MudText>
+                Please sign in to access your booked flights.
+            </MudText>
+        </MudStack>;
+
+    RenderFragment<bool> summaryAndActionsView = (bool isMobile) =>
+        @<MudStack Class="w-100 p-4"
+                   AlignItems="@(isMobile ? AlignItems.Center : AlignItems.End)">
+            <SummaryView Journey="@(_booking?.Journey)"
+                         AddOns="@(_booking?.AddOns)"
+                         FlightIndex="-1"
+                         ShowFlightFromTo="false" />
+            @if (!string.IsNullOrEmpty(Error))
+            {
+                <MudText Color="@Color.Error">@Error</MudText>
+            }
+            <form method="post" action="/api/Bookings/RequestCancelBooking">
+                <MudButton Color="@Color.Error"
+                           Disabled="@(_booking is null)"
+                           Style="border-radius: 100px; min-width: 33%;"
+                           Variant="@Variant.Filled"
+                           ButtonType="@ButtonType.Submit">
+                    Cancel Booking
+                </MudButton>
+                <input name="id" value="@(_booking?.Id)" hidden />
+            </form>
+        </MudStack>;
+
+    RenderFragment<bool> flightsView = (bool isMobile) =>
+        @<MudStack Class="w-100 p-4">
+            @if (_booking?.Journey is not null)
+            {
+                foreach (var flight in _booking.Journey.Flights
+                    .Concat(_booking.Journey.ReturnFlights))
+                {
+                    var dummyJourney = new Journey()
+                    {
+                        From = flight.From,
+                        To = flight.To,
+                        IsTwoWay = false,
+                        BaseCost = flight.BaseCost,
+                        EstimatedTime = flight.EstimatedTime,
+                        ReturnEstimatedTime = TimeSpan.Zero,
+                        Flights = [ flight ],
+                        ReturnFlights = []
+                    };
+                    <JourneyView Journey="@dummyJourney" ShowStops="false" />
+                }
+            }
+            else
+            {
+                <MudStack Class="w-100" AlignItems="@AlignItems.Center">
+                    <MudProgressCircular Indeterminate="true" Class="m-5" />
+                </MudStack>
+            }
+        </MudStack>;
+}
+
+@if (!BookingId.HasValue)
+{
+    <DeviceView>
+        <Desktop>
+            <MudText Typo="@Typo.h4"
+                     Align="@Align.Center"
+                     Color="@Color.Primary"
+                     Class="m-3"
+                     Style="user-select: none;">
+                Your flights
+            </MudText>
+            <AuthorizeView>
+                <Authorized>
+                    @authorizedView(false)
+                </Authorized>
+                <NotAuthorized>
+                    @unauthorizedView(false)
+                </NotAuthorized>
+            </AuthorizeView>
+        </Desktop>
+        <Mobile>
+            <AuthorizeView>
+                <Authorized>
+                    @authorizedView(true)
+                </Authorized>
+                <NotAuthorized>
+                    @unauthorizedView(true)
+                </NotAuthorized>
+            </AuthorizeView>
+        </Mobile>
+    </DeviceView>
+}
+else
+{
+    <DeviceView>
+        <Desktop>
+            <MudText Typo="@Typo.h4"
+                     Align="@Align.Center"
+                     Color="@Color.Primary"
+                     Class="m-3"
+                     Style="user-select: none;">
+                Your flights
+            </MudText>
+            <MudStack Row="true" Class="m-2" Justify="@Justify.SpaceBetween" Spacing="10">
+                @flightsView(false)
+                <MudStack Style="min-width: 33%;" AlignItems="@AlignItems.End">
+                    @summaryAndActionsView(false)
+                </MudStack>
+            </MudStack>
+        </Desktop>
+        <Mobile>
+            <MudStack Spacing="2">
+                @summaryAndActionsView(true)
+                <MudText Typo="@Typo.h6" Class="p-4">Flights</MudText>
+                @flightsView(true)
+            </MudStack>
+        </Mobile>
+    </DeviceView>
+}
 
 @code {
+    private Booking? _booking;
+    private List<Booking>? _bookings;
+    private string? _filter;
+    private bool _isFetching = false;
 
+    [SupplyParameterFromQuery]
+    public Guid? BookingId { get; init; }
+
+    [SupplyParameterFromQuery]
+    public string? Error { get; init; }
+
+    private void BookingListItem_Click(Booking selected)
+    {
+        NavigationManager.NavigateTo($"/Bookings?bookingId={selected.Id}");
+    }
+
+    private async Task SearchButton_Click()
+    {
+        var parameters = new DialogParameters<BookingSearchDialog>();
+        parameters.Add(x => x.Value, _filter);
+
+        var dialog = await DialogService.ShowAsync<BookingSearchDialog>("Search",
+            parameters,
+            new DialogOptions
+            {
+                NoHeader = true,
+                MaxWidth = MaxWidth.ExtraSmall,
+                FullWidth = true
+            }
+        );
+
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            _filter = result.Data?.ToString();
+            await Fetch(true);
+        }
+    }
+
+    private async Task Fetch(bool force)
+    {
+        if (!_isFetching)
+        {
+            bool stateChanged = false;
+            _isFetching = true;
+            if (BookingId.HasValue && (force || _booking is null))
+            {
+                stateChanged = true;
+                _booking = await BookingsService.GetBookingAsync(BookingId.Value);
+            }
+            else if (force || _bookings is null)
+            {
+                var authState = await AuthenticationStateProvider
+                    .GetAuthenticationStateAsync();
+                var user = authState.User;
+
+                if (user.Identity is not null && user.Identity.IsAuthenticated)
+                {
+                    stateChanged = true;
+                    if (string.IsNullOrWhiteSpace(_filter))
+                    {
+                        _filter = null;
+                    }
+                    string[]? tokens = _filter?.ToLowerInvariant()?.Split();
+                    _bookings = await BookingsService.GetBookingsAsync()
+                        .Where(b =>
+                        {
+                            if (tokens is null)
+                            {
+                                return true;
+                            }
+                            if (tokens.Any(t => b.Id.ToString().ToLowerInvariant().Contains(t)))
+                            {
+                                return true;
+                            }
+                            foreach (var flight in b.Journey.Flights
+                                .Concat(b.Journey.ReturnFlights))
+                            {
+                                if (tokens.Any(t =>
+                                        flight.From.Id.ToLowerInvariant().Contains(t)
+                                    ||  flight.From.City.ToLowerInvariant().Contains(t)
+                                    ||  flight.From.Name.ToLowerInvariant().Contains(t)
+                                    ||  flight.To.Id.ToLowerInvariant().Contains(t)
+                                    ||  flight.To.City.ToLowerInvariant().Contains(t)
+                                    ||  flight.To.Name.ToLowerInvariant().Contains(t)
+                                    ||  flight.FlightId.ToLowerInvariant().Contains(t)
+                                ))
+                                {
+                                    return true;
+                                }
+                            }
+                            return false;
+                        })
+                        .ToListAsync();
+                }
+            }
+            _isFetching = false;
+            if (stateChanged)
+            {
+                StateHasChanged();
+            }
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await Fetch(false);
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
 }
