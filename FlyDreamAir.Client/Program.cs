@@ -3,10 +3,21 @@ using FlyDreamAir.Client.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using MudBlazor.Services;
+using System.Security.Claims;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
-builder.Services.AddAuthorizationCore();
+var adminDomain = builder.Configuration["Admin:Domain"];
+builder.Services.AddAuthorizationCore(options =>
+{
+    options.AddPolicy("FlyDreamAirEmployee", policy =>
+    {
+        policy.RequireAssertion(context =>
+            context.User.FindFirst(ClaimTypes.Email)?.Value?.EndsWith($"@{adminDomain}")
+                ?? false
+        );
+    });
+});
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddSingleton<AuthenticationStateProvider, PersistentAuthenticationStateProvider>();
 

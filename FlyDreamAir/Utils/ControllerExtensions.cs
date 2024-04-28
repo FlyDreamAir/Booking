@@ -13,7 +13,7 @@ public static class ControllerExtensions
             return new KeyValuePair<string, string?>(kvp.Key, kvp.Value switch
             {
                 bool b => b ? "true" : "false",
-                _ => kvp.Value.ToString()
+                _ => kvp.Value?.ToString()
             });
         })));
     }

@@ -1,0 +1,26 @@
+﻿<MudDialog Style="background-color: var(--mud-palette-background-grey);">
+    <DialogContent>
+        <MudText Typo="@Typo.h5"
+                 Align="@Align.Center"
+                 Color="@Color.Primary"
+                 Class="m-3"
+                 Style="user-select: none;">
+            Terms of Service
+        </MudText>
+
+        <div class="p-2">
+            <TermsView />
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" OnClick="() => MudDialog?.Close()">
+            OK
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+
+@code {
+    [CascadingParameter]
+    MudDialogInstance? MudDialog { get; set; }
+}

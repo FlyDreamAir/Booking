@@ -1,0 +1,40 @@
+﻿@inject IDialogService DialogService
+
+<MudCheckBox T="bool"
+             Required="true"
+             RequiredError="You must agree to continue.">
+    I agree to the
+    <a href="/Privacy"
+       class="mud-link mud-primary-text mud-link-underline-hover"
+       @onclick="Privacy_Click"
+       @onclick:preventDefault="true">Privacy Policy</a>
+    and
+    <a href="/Terms"
+       class="mud-link mud-primary-text mud-link-underline-hover"
+       @onclick="Terms_Click"
+       @onclick:preventDefault="true">Terms of Service</a>.
+</MudCheckBox>
+
+
+@code {
+    private void Privacy_Click()
+    {
+
+        DialogService.Show<PrivacyDialog>("Privacy Policy", new DialogOptions()
+        {
+            NoHeader = true,
+            MaxWidth = MaxWidth.Large,
+            FullWidth = true
+        });
+    }
+
+    private void Terms_Click()
+    {
+        DialogService.Show<TermsDialog>("Terms of Service", new DialogOptions()
+        {
+            NoHeader = true,
+            MaxWidth = MaxWidth.Large,
+            FullWidth = true
+        });
+    }
+}

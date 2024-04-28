@@ -30,11 +30,15 @@
                     </MudNavLink>
                 </Authorized>
                 <NotAuthorized>
-                    <MudNavLink Href="/Account/Login"
+                    <MudNavLink Href="@("/Account/Login?returnUrl=" +
+                                    Uri.EscapeDataString(NavigationManager.Uri)
+                                )"
                                 Icon="@Icons.Material.Outlined.Login">
                         Sign in
                     </MudNavLink>
-                    <MudNavLink Href="/Account/Register"
+                    <MudNavLink Href="@("/Account/Register?returnUrl=" +
+                                    Uri.EscapeDataString(NavigationManager.Uri)
+                                )"
                                 Icon="@Icons.Material.Outlined.HowToReg">
                         Sign up
                     </MudNavLink>
@@ -81,7 +85,9 @@
                                            OnClick="SignIn">
                                     Sign in
                                 </MudButton>
-                                <MudButton Href="/Account/Register"
+                                <MudButton Href="@("/Account/Register?returnUrl=" +
+                                               Uri.EscapeDataString(NavigationManager.Uri)
+                                           )"
                                            Variant="Variant.Filled"
                                            Color="Color.Primary"
                                            Class="FlyDreamAir-Nav-Button">
