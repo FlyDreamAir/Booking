@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
 using PostmarkDotNet;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,7 +24,17 @@ builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, PersistingServerAuthenticationStateProvider>();
 
-builder.Services.AddAuthorization();
+var adminDomain = builder.Configuration["Admin:Domain"];
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("FlyDreamAirEmployee", policy =>
+    {
+        policy.RequireAssertion(context =>
+            context.User.FindFirst(ClaimTypes.Email)?.Value?.EndsWith($"@{adminDomain}")
+                ?? false
+        );
+    });
+});
 builder.Services.AddAuthentication(options =>
     {
         options.DefaultScheme = IdentityConstants.ApplicationScheme;

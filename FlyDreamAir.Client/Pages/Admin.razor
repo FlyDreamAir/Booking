@@ -1,0 +1,77 @@
+﻿@page "/Admin"
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+
+<PageTitle>Administration</PageTitle>
+
+<AuthorizeView Policy="FlyDreamAirEmployee">
+    <Authorized>
+        <MudText Typo="@Typo.h4"
+                 Align="@Align.Center"
+                 Color="@Color.Primary"
+                 Class="m-3"
+                 Style="user-select: none;">
+            FlyDreamAir Administration
+        </MudText>
+    </Authorized>
+    <NotAuthorized>
+        <MudText Typo="@Typo.h4"
+                 Align="@Align.Center"
+                 Color="@Color.Primary"
+                 Class="m-3"
+                 Style="user-select: none;">
+            Not Found
+        </MudText>
+        <MudStack Class="p-2" AlignItems="@AlignItems.Center">
+            <MudText Class="p-2" @ref="@_unauthorizedText">
+                You seem to have landed on the wrong page.<br />
+                Redirecting you to the correct page in
+                @if (_secondsLeft > 1)
+                {
+                    <Wrapper>
+                        <b>@_secondsLeft</b> seconds.
+                    </Wrapper>
+                }
+                else
+                {
+                    <Wrapper>
+                        <b>@_secondsLeft</b> second.
+                    </Wrapper>
+                }
+            </MudText>
+            <MudProgressCircular Max="10" Min="0" Value="@_secondsLeft" Size="@Size.Large" />
+        </MudStack>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    int _secondsLeft = 10;
+    bool _countdownStarted = false;
+    MudText? _unauthorizedText;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+
+        if (_unauthorizedText is not null && !_countdownStarted)
+        {
+            _countdownStarted = true;
+            Task.Run(async () =>
+            {
+                while (_secondsLeft > 0)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(1));
+                    --_secondsLeft;
+                    StateHasChanged();
+                }
+                await using var location = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                    "location.valueOf"
+                );
+                await JSRuntime.InvokeVoidAsync(
+                    "Reflect.set", location, "href",
+                    "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+                );
+            });
+        }
+    }
+}

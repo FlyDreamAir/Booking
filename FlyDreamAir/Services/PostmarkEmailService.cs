@@ -10,7 +10,7 @@ public class PostmarkEmailService : IEmailService
     public PostmarkEmailService(IConfiguration configuration, PostmarkClient client)
     {
         _client = client;
-        _adminEmail = configuration["Email"] ?? "admin@fly.trungnt2910.com";
+        _adminEmail = configuration["Admin:Email"] ?? "admin@fly.trungnt2910.com";
     }
 
     public async Task SendEmailAsync(string to, string subject, string body, string htmlBody)
