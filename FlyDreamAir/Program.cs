@@ -79,6 +79,7 @@ builder.Services.AddScoped<AirportsService>();
 builder.Services.AddScoped<BookingsService>();
 builder.Services.AddScoped<CardService>();
 builder.Services.AddScoped<FlightsService>();
+builder.Services.AddScoped<NewsService>();
 
 // Hacks for prerendering to work.
 builder.Services.AddScoped(sp => new HttpClient());
