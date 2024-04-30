@@ -1,0 +1,93 @@
+﻿@page "/Explore"
+@using FlyDreamAir.Data.Model
+@inject NewsService NewsService
+
+<PageTitle>Explore</PageTitle>
+
+<DeviceView>
+    <Desktop>
+        <MudText Typo="@Typo.h4"
+                 Align="@Align.Center"
+                 Color="@Color.Primary"
+                 Class="m-3"
+                 Style="user-select: none; margin-bottom: 0 !important;">
+            Explore
+        </MudText>
+    </Desktop>
+</DeviceView>
+
+<div class="w-100" style="overflow-x: hidden; overflow-y: hidden;">
+    @if (_posts is not null)
+    {
+        <MudGrid Class="p-4" Style="overflow-y: hidden;">
+            @foreach (var post in _posts)
+            {
+                <MudItem xs="12" md="4" Style="width: 300px; height: 280px;">
+                    <MudPaper Width="100%"
+                              Height="100%"
+                              MaxHeight="100%"
+                              Style="overflow: clip; position: relative;">
+                        <MudStack Class="px-4 py-2"
+                                  Style="max-height: 35%"
+                                  Spacing="1">
+                            <MudText Align="@Align.Center"
+                                     Style="@($@"
+                                         max-height: 10%;
+                                         text-wrap: nowrap;
+                                         overflow: hidden;
+                                         text-overflow: ellipsis;
+                                 ")">
+                                <b>@post.Title</b>
+                            </MudText>
+                            <MudText Align="@Align.Left"
+                                     Style="@($@"
+                                         overflow: hidden;
+                                         text-overflow: ellipsis;
+                                         display: -webkit-box;
+                                         -webkit-line-clamp: 2;
+                                         -webkit-box-orient: vertical;
+                                 ")">
+                                @post.Description
+                            </MudText>
+                        </MudStack>
+                        <MudImage Src="@post.ImageSrc.ToString()"
+                                  Style="@($@"
+                                      position: absolute;
+                                      display: block;
+                                      width: 100%;
+                                      height: 65%;
+                                      object-fit: cover;
+                                      bottom: 0;
+                              ")" />
+                    </MudPaper>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+    else
+    {
+        <MudStack Class="w-100" AlignItems="@AlignItems.Center">
+            <MudProgressCircular Indeterminate="true" Class="m-5" />
+        </MudStack>
+    }
+</div>
+
+@code {
+    private List<Post>? _posts;
+    private bool _isFetching = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+        if (!_isFetching)
+        {
+            _isFetching = true;
+            if (_posts is null)
+            {
+                _posts = await NewsService.GetPostsAsync().ToListAsync();
+                StateHasChanged();
+            }
+            _isFetching = false;
+        }
+    }
+}

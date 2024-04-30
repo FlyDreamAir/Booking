@@ -27,6 +27,7 @@ builder.Services.AddScoped(sp =>
         BaseAddress = new Uri(builder.HostEnvironment.BaseAddress)
     });
 builder.Services.AddScoped<BookingsService>();
+builder.Services.AddScoped<NewsService>();
 
 builder.Services.AddMudServices();
 

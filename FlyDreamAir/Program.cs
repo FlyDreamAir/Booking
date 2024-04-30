@@ -84,6 +84,7 @@ builder.Services.AddScoped<NewsService>();
 // Hacks for prerendering to work.
 builder.Services.AddScoped(sp => new HttpClient());
 builder.Services.AddScoped<ClientServices.BookingsService>();
+builder.Services.AddScoped<ClientServices.NewsService>();
 
 builder.Services
     .AddEndpointsApiExplorer()

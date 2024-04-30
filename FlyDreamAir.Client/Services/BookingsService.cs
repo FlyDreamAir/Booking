@@ -1,18 +1,12 @@
 ﻿using FlyDreamAir.Data.Model;
-using Microsoft.AspNetCore.WebUtilities;
-using System.Net.Http.Json;
-using System.Runtime.CompilerServices;
 
 namespace FlyDreamAir.Client.Services;
 
-public class BookingsService
+public class BookingsService : HttpApiService
 {
-    private const string _apiBase = "api/Bookings";
-    private readonly HttpClient _httpClient;
-
     public BookingsService(HttpClient httpClient)
+        : base(httpClient)
     {
-        _httpClient = httpClient;
     }
 
     public IAsyncEnumerable<AddOn> GetAddOnsAsync(
@@ -37,12 +31,12 @@ public class BookingsService
         DateTimeOffset departureTime
     )
     {
-        return _httpClient.GetFromJsonAsync<AddOn>(_GetApiUri(new()
+        return _GetObjectFromJsonAsync<AddOn>(new()
         {
             { nameof(id), id },
             { nameof(flightId), flightId },
             { nameof(departureTime), departureTime }
-        }))!;
+        });
     }
 
     public IAsyncEnumerable<Airport> GetAirportsAsync()
@@ -54,10 +48,10 @@ public class BookingsService
         string id
     )
     {
-        return _httpClient.GetFromJsonAsync<Airport>(_GetApiUri(new()
+        return _GetObjectFromJsonAsync<Airport>(new()
         {
             { nameof(id), id }
-        }))!;
+        });
     }
 
     public IAsyncEnumerable<Booking> GetBookingsAsync(
@@ -65,21 +59,21 @@ public class BookingsService
         bool includeUnpaid = false
     )
     {
-        return _httpClient.GetFromJsonAsAsyncEnumerable<Booking>(_GetApiUri(new()
+        return _GetObjectsFromJsonAsAsyncEnumerable<Booking>(new()
         {
             { nameof(includePast), includePast },
             { nameof(includeUnpaid), includeUnpaid },
-        }))!;
+        });
     }
 
     public Task<Booking> GetBookingAsync(
         Guid id
     )
     {
-        return _httpClient.GetFromJsonAsync<Booking>(_GetApiUri(new()
+        return _GetObjectFromJsonAsync<Booking>(new()
         {
             { nameof(id), id }
-        }))!;
+        });
     }
 
     public Task<Flight> GetFlightAsync(
@@ -88,12 +82,12 @@ public class BookingsService
         bool searchPast = false
     )
     {
-        return _httpClient.GetFromJsonAsync<Flight>(_GetApiUri(new()
+        return _GetObjectFromJsonAsync<Flight>(new()
         {
             { nameof(flightId), flightId },
             { nameof(departureTime), departureTime },
             { nameof(searchPast), searchPast }
-        }))!;
+        });
     }
 
     public IAsyncEnumerable<Journey> GetJourneysAsync(
@@ -124,45 +118,5 @@ public class BookingsService
             { nameof(departureTime), departureTime },
             { nameof(seatType), seatType }
         });
-    }
-
-    private async IAsyncEnumerable<T> _GetObjectsFromJsonAsAsyncEnumerable<T>(
-        Dictionary<string, object?>? args = null,
-        [CallerMemberName] string caller = "")
-    {
-        await foreach (var obj in
-            _httpClient.GetFromJsonAsAsyncEnumerable<T>(_GetApiUri(args, caller)))
-        {
-            if (obj is not null)
-            {
-                yield return obj;
-            }
-        }
-    }
-
-    private string _GetApiUri(
-        Dictionary<string, object?>? args = null,
-        [CallerMemberName] string caller = "")
-    {
-        const string async = "Async";
-        if (caller.EndsWith(async))
-        {
-            caller = caller[0..(caller.Length - async.Length)];
-        }
-        if (args is null)
-        {
-            return $"{_apiBase}/{caller}";
-        }
-        else
-        {
-            return QueryHelpers.AddQueryString($"{_apiBase}/{caller}", args.Select((kvp) =>
-            {
-                return new KeyValuePair<string, string?>(kvp.Key, kvp.Value switch
-                {
-                    bool b => b ? "true" : "false",
-                    _ => kvp.Value?.ToString()
-                });
-            }));
-        }
     }
 }
