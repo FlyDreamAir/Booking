@@ -37,7 +37,10 @@
         @{
             _isMobile = false;
         }
-        <MudStack Row="true" Class="m-2" Justify="@Justify.SpaceBetween" Spacing="10">
+        <MudStack Row="true"
+                  Class="w-100 px-8 py-2"
+                  Justify="@Justify.SpaceBetween"
+                  Spacing="10">
             @DesktopContent
             <MudStack Style="min-width: 33%;" AlignItems="@AlignItems.End">
                 <SummaryView Journey="@_journey" AddOns="_addOns" FlightIndex="@FlightIndex" />

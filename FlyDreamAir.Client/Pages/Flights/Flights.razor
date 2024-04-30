@@ -58,7 +58,10 @@
                   Color="@Color.Primary"
                   Class="m-3"
                   Style="user-select: none;" />
-        <MudStack Row="true" Class="m-2" Justify="@Justify.SpaceBetween" Spacing="10">
+        <MudStack Row="true"
+                  Class="w-100 px-8 py-2"
+                  Justify="@Justify.SpaceBetween"
+                  Spacing="10">
             <MudStack Style="width: 100%;">
                 <FlightSearchView InitialFrom="@From" InitialTo="@To"
                                   InitialDate="@Date" InitialReturnDate="@ReturnDate" />
