@@ -3,12 +3,12 @@ WORKDIR /App
 
 ENV PATH="${PATH}:/root/.dotnet/tools"
 
-# Install Python 3
-RUN apt-get install -y python3
 # Install wasm-tools
 RUN dotnet workload install wasm-tools
 # Install dotnet ef
 RUN dotnet tool install --global dotnet-ef
+# Install Python 3
+RUN apt-get update -y && apt-get install -y python3
 
 # Copy everything
 COPY . ./
