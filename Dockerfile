@@ -3,10 +3,13 @@ WORKDIR /App
 
 ENV PATH="${PATH}:/root/.dotnet/tools"
 
-# Copy everything
-COPY . ./
+# Install wasm-tools
+RUN dotnet workload install wasm-tools
 # Install dotnet ef
 RUN dotnet tool install --global dotnet-ef
+
+# Copy everything
+COPY . ./
 # Restore as distinct layers
 RUN dotnet restore
 # Build and publish a release
