@@ -1,0 +1,76 @@
+﻿@page "/Account/ResendEmailConfirmation"
+@using System.ComponentModel.DataAnnotations
+
+<PageTitle>Resend email confirmation</PageTitle>
+
+<BackgroundFiller />
+
+<MudText Typo="@Typo.h4"
+         Align="@Align.Center"
+         Color="@Color.Primary"
+         Class="m-3"
+         Style="user-select: none;">
+    Resend email confirmation
+</MudText>
+
+<MudStack Class="w-100 p-4" AlignItems="@AlignItems.Center">
+    <MudText>
+        Please enter the email address you have used to register.
+    </MudText>
+
+    @{
+        RenderFragment<bool> form = (isMobile) =>
+            @<MudHtmlForm Action="/api/Account/ResendEmailConfirmation"
+                          Method="@HtmlFormMethod.Post"
+                          ActionQueries="@(new(){ { "returnUrl", ReturnUrl } })"
+                          Context="form"
+                          Class="@(isMobile ? "w-100" : "w-50")">
+                <MudStack Spacing="1">
+                    <MudTextField T="string"
+                                  Variant="@Variant.Outlined"
+                                  Required="true"
+                                  RequiredError="Please enter your email."
+                                  Validation="@(new EmailAddressAttribute()
+                                  {
+                                      ErrorMessage = "Please enter a valid email address."
+                                  })"
+                                  UserAttributes="@(new(){ {"name", "email"} })" />
+                    @if (!string.IsNullOrEmpty(Error))
+                    {
+                        <MudText Color="@Color.Error">@Error</MudText>
+                    }
+                    <MudStack Row="true" Justify="@Justify.Center" Class="m-3">
+                        <MudButton Variant="@Variant.Filled"
+                                   Color="@Color.Primary"
+                                   Size="@Size.Large"
+                                   Style="border-radius: 100px;"
+                                   OnClick="form.Submit">
+                            Resend
+                        </MudButton>
+                    </MudStack>
+                </MudStack>
+            </MudHtmlForm>;
+    }
+
+    <DeviceView Prerender="false">
+        <Unknown>
+            <MudStack AlignItems="@AlignItems.Center">
+                <MudProgressCircular Indeterminate="true" Class="m-5" />
+            </MudStack>
+        </Unknown>
+        <Desktop>
+            @form(false)
+        </Desktop>
+        <Mobile>
+            @form(true)
+        </Mobile>
+    </DeviceView>
+</MudStack>
+
+@code {
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; init; }
+
+    [SupplyParameterFromQuery]
+    public string? Error { get; init; }
+}

@@ -326,6 +326,45 @@ public class AccountController : ControllerBase
         );
     }
 
+    [HttpPost(nameof(ResendEmailConfirmation))]
+    public async Task<ActionResult> ResendEmailConfirmation(
+        [FromForm]
+        string email,
+        [FromQuery]
+        string returnUrl
+    )
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+
+        if (user is null)
+        {
+            return this.RedirectWithQuery("/Account/RegisterConfirmation",
+                new Dictionary<string, object?>() {
+                    { nameof(returnUrl), returnUrl },
+                    { nameof(email), email }
+                });
+        }
+
+        var userId = await _userManager.GetUserIdAsync(user);
+
+        var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+        var callbackUrl = $"{Request.Scheme}://" +
+            $"{Request.Host.ToUriComponent()}" +
+            $"/Account/ConfirmEmail" +
+            $"?userId={Uri.EscapeDataString(userId)}" +
+            $"&code={Uri.EscapeDataString(code)}" +
+            $"&returnUrl={Uri.EscapeDataString(returnUrl)}";
+
+        await _emailSender.SendConfirmationLinkAsync(user, email, callbackUrl);
+
+        return this.RedirectWithQuery("/Account/RegisterConfirmation",
+            new Dictionary<string, object?>() {
+                { nameof(returnUrl), returnUrl },
+                { nameof(email), email }
+            });
+    }
+
     [HttpPost(nameof(ConfirmEmail))]
     public async Task<ActionResult> ConfirmEmail(
         [FromForm]
@@ -373,6 +412,102 @@ public class AccountController : ControllerBase
                 {
                     { nameof(returnUrl), returnUrl },
                     { "error", "Invalid confirmation link." },
+                }
+            );
+        }
+    }
+
+    [HttpPost(nameof(ForgotPassword))]
+    public async Task<ActionResult> ForgotPassword(
+        [FromForm]
+        string userName,
+        [FromQuery]
+        string returnUrl
+    )
+    {
+        var user = await _userManager.FindByNameAsync(userName);
+
+        if (user is null
+            || !await _userManager.IsEmailConfirmedAsync(user)
+            || string.IsNullOrEmpty(user.Email))
+        {
+            return this.RedirectWithQuery("/Account/ForgotPasswordConfirmation",
+                new Dictionary<string, object?>()
+                {
+                    { nameof(returnUrl), returnUrl }
+                }
+            );
+        }
+
+        var code = await _userManager.GeneratePasswordResetTokenAsync(user);
+        code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+        var callbackUrl = $"{Request.Scheme}://" +
+            $"{Request.Host.ToUriComponent()}" +
+            $"/Account/ResetPassword" +
+            $"?code={Uri.EscapeDataString(code)}" +
+            $"&userName={Uri.EscapeDataString(userName)}" +
+            $"&returnUrl={Uri.EscapeDataString(returnUrl)}";
+
+        await _emailSender.SendPasswordResetLinkAsync(user, user.Email!, callbackUrl);
+
+        return this.RedirectWithQuery("/Account/ForgotPasswordConfirmation",
+            new Dictionary<string, object?>()
+            {
+                { nameof(returnUrl), returnUrl }
+            }
+        );
+    }
+
+    [HttpPost(nameof(ResetPassword))]
+    public async Task<ActionResult> ResetPassword(
+        [FromForm]
+        string userName,
+        [FromForm]
+        string password,
+        [FromForm]
+        string code,
+        [FromQuery]
+        string returnUrl
+    )
+    {
+        try
+        {
+            var user = await _userManager.FindByNameAsync(userName)
+                ?? throw new InvalidOperationException("Invalid user name");
+
+            var result = await _userManager.ResetPasswordAsync(
+                user,
+                Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code)),
+                password
+            );
+
+            if (result.Succeeded)
+            {
+                return this.RedirectWithQuery("/Account/ResetPasswordConfirmation",
+                    new Dictionary<string, object?>()
+                    {
+                    { nameof(returnUrl), returnUrl }
+                    }
+                );
+            }
+
+            return this.RedirectWithQuery("/Account/ResetPassword",
+                new Dictionary<string, object?>()
+                {
+                    { nameof(userName), userName },
+                    { nameof(code), code },
+                    { nameof(returnUrl), returnUrl },
+                    { "error", result.Errors.First().Description },
+                }
+            );
+        }
+        catch
+        {
+            // Don't reveal that the user does not exist or other server errors.
+            return this.RedirectWithQuery("/Account/ResetPasswordConfirmation",
+                new Dictionary<string, object?>()
+                {
+                    { nameof(returnUrl), returnUrl }
                 }
             );
         }

@@ -45,7 +45,7 @@
                                   ErrorMessage = "Please enter a valid email address."
                               })"
                               UserAttributes="@(new(){ {"name", "email"} })" />
-                <MudTextField T="string"
+                <MudTextField @bind-Value="@_password"
                               Variant="@Variant.Outlined"
                               Label="Password"
                               InputType="@InputType.Password"
@@ -57,6 +57,15 @@
                                       "The password must be at least {1} characters long."
                               })"
                               UserAttributes="@(new(){ {"name", "password"} })" />
+                <MudTextField T="string"
+                              Variant="@Variant.Outlined"
+                              Label="Confirm Password"
+                              InputType="@InputType.Password"
+                              Required="true"
+                              RequiredError="Please confirm your password."
+                              Validation="@((Func<string, string?>)((value) =>
+                                  (value == _password)
+                                      ? null : "The passwords do not match."))" />
                 <TermsCheckbox />
                 @if (!string.IsNullOrEmpty(Error))
                 {
@@ -123,6 +132,8 @@
 </DeviceView>
 
 @code {
+    private string? _password;
+
     [SupplyParameterFromQuery]
     public string? ReturnUrl { get; set; }
 

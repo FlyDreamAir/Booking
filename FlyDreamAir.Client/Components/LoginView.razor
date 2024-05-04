@@ -16,6 +16,16 @@
                 { nameof(returnUrl), returnUrl }
             });
     }
+
+    string GetUrl(string destination)
+    {
+        return QueryHelpers.AddQueryString($"/Account/{destination}",
+            new Dictionary<string, string?>()
+            {
+                { nameof(returnUrl), returnUrl }
+            }
+        );
+    }
 }
 
 <AuthorizeView>
@@ -41,6 +51,12 @@
                               Required="true"
                               RequiredError="Please enter your password."
                               UserAttributes="@(new(){ {"name", "password"} })" />
+                <MudLink Href="@GetUrl("ForgotPassword")">
+                    Forgot your password?
+                </MudLink>
+                <MudLink Href="@GetUrl("ResendEmailConfirmation")">
+                    Resend email confirmation
+                </MudLink>
                 @if (!string.IsNullOrEmpty(Error))
                 {
                     <MudText Color="@Color.Error">@Error</MudText>
