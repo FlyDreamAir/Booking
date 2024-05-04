@@ -1,15 +1,16 @@
-using ClientServices = FlyDreamAir.Client.Services;
 using FlyDreamAir.Components;
 using FlyDreamAir.Components.Account;
 using FlyDreamAir.Data;
 using FlyDreamAir.Data.Seeders;
 using FlyDreamAir.Services;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
 using PostmarkDotNet;
 using System.Security.Claims;
+using ClientServices = FlyDreamAir.Client.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +19,12 @@ builder.Configuration.AddJsonFile("appsettings.Secrets.json", optional: true);
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+});
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();
@@ -119,6 +126,7 @@ else
 }
 
 app.UseHttpsRedirection();
+app.UseForwardedHeaders();
 
 app.UseStaticFiles();
 app.UseAntiforgery();
