@@ -125,8 +125,8 @@ else
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
 app.UseForwardedHeaders();
+app.UseHttpsRedirection();
 
 app.UseStaticFiles();
 app.UseAntiforgery();
