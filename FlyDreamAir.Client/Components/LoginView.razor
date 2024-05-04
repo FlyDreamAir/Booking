@@ -75,7 +75,7 @@
                     <MudText>or</MudText>
                     <MudDivider Style="width: auto;" />
                 </MudStack>
-                <MudStack Spacing="1" Class="m-3">
+                <MudStack Spacing="2" Class="m-3">
                     <MudButton Variant="@Variant.Filled"
                                Color="@Color.Transparent"
                                Size="@Size.Large"
@@ -83,6 +83,14 @@
                                Style="background-color: white;"
                                Href="@(GetExternalLoginUrl("Google"))">
                         Sign In with Google
+                    </MudButton>
+                    <MudButton Variant="@Variant.Filled"
+                               Color="@Color.Transparent"
+                               Size="@Size.Large"
+                               StartIcon="@Icons.Custom.Brands.Microsoft"
+                               Style="background-color: white;"
+                               Href="@(GetExternalLoginUrl("Microsoft"))">
+                        Sign In with Microsoft
                     </MudButton>
                 </MudStack>
             </MudStack>

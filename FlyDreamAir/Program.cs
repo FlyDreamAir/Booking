@@ -47,6 +47,13 @@ builder.Services.AddAuthentication(options =>
         options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]
             ?? throw new InvalidOperationException("Google OAuth ClientSecret not found.");
     })
+    .AddMicrosoftAccount(options =>
+    {
+        options.ClientId = builder.Configuration["Authentication:Microsoft:ClientId"]
+            ?? throw new InvalidOperationException("Microsoft OAuth ClientId not found.");
+        options.ClientSecret = builder.Configuration["Authentication:Microsoft:ClientSecret"]
+            ?? throw new InvalidOperationException("Microsoft OAuth ClientSecret not found.");
+    })
     .AddIdentityCookies();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")

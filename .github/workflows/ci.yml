@@ -44,6 +44,8 @@ jobs:
           dotnet user-secrets set ApiKeys:Postmark "Dummy API Key" --project FlyDreamAir/FlyDreamAir.csproj
           dotnet user-secrets set Authentication:Google:ClientId "Dummy API Key" --project FlyDreamAir/FlyDreamAir.csproj
           dotnet user-secrets set Authentication:Google:ClientSecret "Dummy API Key" --project FlyDreamAir/FlyDreamAir.csproj
+          dotnet user-secrets set Authentication:Microsoft:ClientId "Dummy API Key" --project FlyDreamAir/FlyDreamAir.csproj
+          dotnet user-secrets set Authentication:Microsoft:ClientSecret "Dummy API Key" --project FlyDreamAir/FlyDreamAir.csproj
 
       - name: Restore
         run: dotnet restore
