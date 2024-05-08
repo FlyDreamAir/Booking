@@ -21,7 +21,7 @@ public class PostmarkEmailService : IEmailService
                 To = to,
                 From = _adminEmail,
                 TrackOpens = true,
-                Subject = "Confirm your email",
+                Subject = subject,
                 TextBody = body,
                 HtmlBody = htmlBody
             }
