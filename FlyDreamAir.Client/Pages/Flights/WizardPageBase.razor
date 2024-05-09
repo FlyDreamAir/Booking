@@ -100,7 +100,8 @@
     && _addOns is not null
     && _journey is not null)
 {
-    var localDate = _journey.From.GetLocalDate(Date);
+    var localDate = Date.HasValue ?
+        _journey.From.GetLocalDate(Date) : (DateTimeOffset?)null;
     var localReturnDate = ReturnDate.HasValue ?
         _journey.To.GetLocalDate(ReturnDate.Value) : (DateTimeOffset?)null;
 
@@ -110,7 +111,7 @@
                  @ref="_form">
         <input name="from" value="@From" />
         <input name="to" value="@To" />
-        <input name="date" value="@(localDate
+        <input name="date" value="@(localDate?
             .ToString(CultureInfo.InvariantCulture.DateTimeFormat))" />
         <input name="returnDate" value="@(localReturnDate?
             .ToString(CultureInfo.InvariantCulture.DateTimeFormat))" />
@@ -155,7 +156,7 @@
     public required string To { get; set; }
 
     [SupplyParameterFromQuery]
-    public required DateTime Date { get; set; }
+    public DateTime? Date { get; set; }
 
     [SupplyParameterFromQuery]
     public DateTime? ReturnDate { get; set; }
@@ -218,7 +219,7 @@
                     return await BookingsService.GetFlightAsync(id, departure);
                 })
                 .ToListAsync();
-            _journey = _flights.ToJourney(From, To, Date, ReturnDate);
+            _journey = _flights.ToJourney(From, To, Date.Value, ReturnDate);
             _currentFlight = _flights[FlightIndex];
 
             _addOns = await Enumerable.Zip(AddOnIds, AddOnFlightIndexes, AddOnAmounts)
