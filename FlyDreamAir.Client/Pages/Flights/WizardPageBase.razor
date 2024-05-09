@@ -95,17 +95,24 @@
     </Mobile>
 </DeviceView>
 
-@if ((IsSkippable || EnableNextButton) && _flights is not null && _addOns is not null)
+@if ((IsSkippable || EnableNextButton)
+    && _flights is not null
+    && _addOns is not null
+    && _journey is not null)
 {
+    var localDate = _journey.From.GetLocalDate(Date);
+    var localReturnDate = ReturnDate.HasValue ?
+        _journey.To.GetLocalDate(ReturnDate.Value) : (DateTimeOffset?)null;
+
     <MudHtmlForm Action="@FormAction"
                  Method="@FormMethod"
                  Style="display: none;"
                  @ref="_form">
         <input name="from" value="@From" />
         <input name="to" value="@To" />
-        <input name="date" value="@(Date
+        <input name="date" value="@(localDate
             .ToString(CultureInfo.InvariantCulture.DateTimeFormat))" />
-        <input name="returnDate" value="@(ReturnDate?
+        <input name="returnDate" value="@(localReturnDate?
             .ToString(CultureInfo.InvariantCulture.DateTimeFormat))" />
         @foreach (var flight in _flights)
         {
