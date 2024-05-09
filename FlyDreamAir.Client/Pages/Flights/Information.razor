@@ -104,7 +104,12 @@
     {
         await base.OnAfterRenderAsync(firstRender);
 
-        if (_form is not null)
+        if (_form is not null
+            && FirstName is not null
+            && LastName is not null
+            && Email is not null
+            && PassportId is not null
+            && DateOfBirth.HasValue)
         {
             await _form.Validate();
         }
