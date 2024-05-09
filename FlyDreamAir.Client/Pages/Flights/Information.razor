@@ -10,32 +10,41 @@
 }
 
 @code {
-    private string? _firstName;
-    private string? _lastName;
-    private string? _email;
-    private string? _passportId;
-    private DateTime? _dateOfBirth;
-
     private MudForm? _form;
     private bool _valid = false;
+
+    [SupplyParameterFromQuery]
+    public string? FirstName { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? LastName { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? Email { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? PassportId { get; set; }
+
+    [SupplyParameterFromQuery]
+    public DateTime? DateOfBirth { get; set; }
 
     private RenderFragment _Form(bool isMobile) =>
         @<MudForm @ref="_form" @bind-IsValid="@_valid"
                   Class="@($@"w-100 {(isMobile ? "p-4" : "px-4")}")">
             <MudStack>
-                <MudTextField @bind-Value="_firstName"
+                <MudTextField @bind-Value="@FirstName"
                           Label="First name"
                           Placeholder="John"
                           Required="true"
                           RequiredError="Please enter your first name."
                           Variant="@Variant.Outlined" />
-                <MudTextField @bind-Value="_lastName"
+                <MudTextField @bind-Value="@LastName"
                           Label="Last name"
                           Placeholder="Doe"
                           Required="true"
                           RequiredError="Please enter your last name."
                           Variant="@Variant.Outlined" />
-                <MudTextField @bind-Value="_email"
+                <MudTextField @bind-Value="@Email"
                           Label="Email"
                           Placeholder="someone@example.com"
                           Required="true"
@@ -45,13 +54,13 @@
                               ErrorMessage = "Please enter a valid email address."
                           })"
                           Variant="@Variant.Outlined" />
-                <MudTextField @bind-Value="_passportId"
+                <MudTextField @bind-Value="@PassportId"
                           Label="Passport ID"
                           Placeholder="RA123456"
                           Required="true"
                           RequiredError="Please enter your passport ID."
                           Variant="@Variant.Outlined" />
-                <MudDatePicker @bind-Date="@_dateOfBirth"
+                <MudDatePicker @bind-Date="@DateOfBirth"
                                Label="Date of birth"
                                Placeholder="dd/mm/yyyy"
                                DateFormat="dd/MM/yyyy"
@@ -82,14 +91,24 @@
 
     protected override RenderFragment FormAdditionalContent =>
         @<Wrapper>
-            <input name="firstName" value="@_firstName" />
-            <input name="lastName" value="@_lastName" />
-            <input name="email" value="@_email" />
-            <input name="passportId" value="@_passportId" />
+            <input name="firstName" value="@FirstName" />
+            <input name="lastName" value="@LastName" />
+            <input name="email" value="@Email" />
+            <input name="passportId" value="@PassportId" />
             <input name="dateOfBirth"
-                   value="@(_dateOfBirth?.ToString(CultureInfo.InvariantCulture.DateTimeFormat))"
+                   value="@(DateOfBirth?.ToString(CultureInfo.InvariantCulture.DateTimeFormat))"
                    hidden />
         </Wrapper>;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (_form is not null)
+        {
+            await _form.Validate();
+        }
+    }
 
     protected override async Task<bool> OnBeforeSubmitAsync()
     {
