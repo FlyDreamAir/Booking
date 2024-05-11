@@ -67,6 +67,11 @@
                         <MudNavButton Href="/Explore" Class="FlyDreamAir-Nav-Button">
                             Explore
                         </MudNavButton>
+                        <AuthorizeView Policy="FlyDreamAirEmployee">
+                            <MudNavButton Href="/Admin" Class="FlyDreamAir-Nav-Button">
+                                Admin
+                            </MudNavButton>
+                        </AuthorizeView>
                         <AuthorizeView>
                             <Authorized>
                                 <MudButton Variant="@Variant.Outlined"
