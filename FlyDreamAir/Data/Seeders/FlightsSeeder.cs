@@ -4,79 +4,82 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FlyDreamAir.Data.Seeders;
 
-public static class BookingSeeder
+public class FlightsSeeder
 {
-    public static async Task SeedBookingData(this WebApplication app)
+    private readonly ApplicationDbContext _dbContext;
+    private readonly AirportsService _airportsService;
+
+    public FlightsSeeder(
+        DbContextOptions<ApplicationDbContext> dbContextOptions,
+        AirportsService airportsService
+    )
     {
-        using var scope = app.Services.CreateScope();
-        var options = scope.ServiceProvider.GetService<DbContextOptions<ApplicationDbContext>>();
-
-        if (options is null)
-        {
-            throw new InvalidOperationException("Cannot get DbContext for seeding.");
-        }
-
-        var dbContext = new ApplicationDbContext(options);
-
-        // Flights
-        // Vietnam
-        await dbContext.UpdateFlight(
-            "NT 2910", "SYD", "HAN", new TimeSpan(9, 45, 0), 400,
-            new TimeOnly(14, 15));
-        await dbContext.UpdateFlight(
-            "NT 2911", "HAN", "SYD", new TimeSpan(9, 10, 0), 430,
-            new TimeOnly(23, 40));
-
-        await dbContext.UpdateFlight(
-            "NT 2912", "SYD", "SGN", new TimeSpan(8, 10, 0), 320,
-            new TimeOnly(10, 15));
-        await dbContext.UpdateFlight(
-            "NT 2913", "SGN", "SYD", new TimeSpan(8, 10, 0), 330,
-            new TimeOnly(20, 45));
-
-        await dbContext.UpdateFlight(
-            "NT 2914", "MEL", "SGN", new TimeSpan(8, 15, 0), 230,
-            new TimeOnly(10, 45));
-        await dbContext.UpdateFlight(
-            "NT 2915", "SGN", "MEL", new TimeSpan(8, 10, 0), 250,
-            new TimeOnly(21, 15));
-
-        // Japan
-        await dbContext.UpdateFlight(
-            "NT 2920", "SYD", "HND", new TimeSpan(9, 45, 0), 710,
-            new TimeOnly(11, 50));
-        await dbContext.UpdateFlight(
-            "NT 2921", "HND", "SYD", new TimeSpan(9, 40, 0), 790,
-            new TimeOnly(22, 00));
-
-        // Domestic
-        await dbContext.UpdateFlight(
-            "NT 1024", "SYD", "MEL", new TimeSpan(1, 35, 0), 120,
-            new TimeOnly(9, 00), new TimeOnly(15, 00));
-        await dbContext.UpdateFlight(
-            "NT 1025", "MEL", "SYD", new TimeSpan(1, 25, 0), 120,
-            new TimeOnly(9, 00), new TimeOnly(15, 00));
-        await dbContext.UpdateFlight(
-            "NT 1026", "SYD", "MEL", new TimeSpan(1, 35, 0), 90,
-            new TimeOnly(12, 00));
-        await dbContext.UpdateFlight(
-            "NT 1027", "MEL", "SYD", new TimeSpan(1, 25, 0), 90,
-            new TimeOnly(12, 00));
-
-        // AddOns
-        // Luggage
-        await dbContext.UpdateLuggage(20, 50);
-        await dbContext.UpdateLuggage(40, 80);
-
-        // Meals
-        await dbContext.UpdateMeal("Curry", "Vegan", 10.0m, new Uri("https://www.justonecookbook.com/wp-content/uploads/2020/02/Vegetarian-Curry-4360-I.jpg"));
-        await dbContext.UpdateMeal("Banh mi", "Beef", 9.0m, new Uri("https://images.getrecipekit.com/20230813061131-andy-20cooks-20-20roast-20pork-20banh-20mi.jpg?aspect_ratio=4:3&quality=90&"));
-
-        await dbContext.SaveChangesAsync();
+        _dbContext = new ApplicationDbContext(dbContextOptions);
+        _airportsService = airportsService;
     }
 
-    private static async Task UpdateFlight(
-        this ApplicationDbContext dbContext,
+    public async Task Seed()
+    {
+        // Vietnam
+        await UpdateFlight(
+            "NT 2910", "SYD", "HAN", new TimeSpan(9, 45, 0), 400,
+            new TimeOnly(14, 15)
+        );
+        await UpdateFlight(
+            "NT 2911", "HAN", "SYD", new TimeSpan(9, 10, 0), 430,
+            new TimeOnly(23, 40)
+        );
+
+        await UpdateFlight(
+            "NT 2912", "SYD", "SGN", new TimeSpan(8, 10, 0), 320,
+            new TimeOnly(10, 15)
+        );
+        await UpdateFlight(
+            "NT 2913", "SGN", "SYD", new TimeSpan(8, 10, 0), 330,
+            new TimeOnly(20, 45)
+        );
+
+        await UpdateFlight(
+            "NT 2914", "MEL", "SGN", new TimeSpan(8, 15, 0), 230,
+            new TimeOnly(10, 45)
+        );
+        await UpdateFlight(
+            "NT 2915", "SGN", "MEL", new TimeSpan(8, 10, 0), 250,
+            new TimeOnly(21, 15)
+        );
+
+        // Japan
+        await UpdateFlight(
+            "NT 2920", "SYD", "HND", new TimeSpan(9, 45, 0), 710,
+            new TimeOnly(11, 50)
+        );
+        await UpdateFlight(
+            "NT 2921", "HND", "SYD", new TimeSpan(9, 40, 0), 790,
+            new TimeOnly(22, 00)
+        );
+
+        // Domestic
+        await UpdateFlight(
+            "NT 1024", "SYD", "MEL", new TimeSpan(1, 35, 0), 120,
+            new TimeOnly(9, 00), new TimeOnly(15, 00)
+        );
+        await UpdateFlight(
+            "NT 1025", "MEL", "SYD", new TimeSpan(1, 25, 0), 120,
+            new TimeOnly(9, 00), new TimeOnly(15, 00)
+        );
+        await UpdateFlight(
+            "NT 1026", "SYD", "MEL", new TimeSpan(1, 35, 0), 90,
+            new TimeOnly(12, 00)
+        );
+        await UpdateFlight(
+            "NT 1027", "MEL", "SYD", new TimeSpan(1, 25, 0), 90,
+            new TimeOnly(12, 00)
+        );
+
+        await _dbContext.SaveChangesAsync();
+    }
+
+    private async Task UpdateFlight(
         string flightId,
         string fromAirport,
         string toAirport,
@@ -86,7 +89,7 @@ public static class BookingSeeder
     )
     {
         // The flight itself.
-        var flight = await dbContext.Flights.FirstOrDefaultAsync(f => f.FlightId == flightId);
+        var flight = await _dbContext.Flights.FirstOrDefaultAsync(f => f.FlightId == flightId);
 
         if (flight is null)
         {
@@ -107,11 +110,10 @@ public static class BookingSeeder
             flight.BaseCost = baseCost;
         }
 
-        dbContext.Update(flight);
+        _dbContext.Update(flight);
 
         // Departure times.
-        var airportService = new AirportsService();
-        var departureAirport = await airportService.GetAirportAsync(fromAirport)
+        var departureAirport = await _airportsService.GetAirportAsync(fromAirport)
             ?? throw new ArgumentException("Bad airport", nameof(fromAirport));
         var departureTimeZone = TimeZoneInfo.FindSystemTimeZoneById(departureAirport.TimeZone);
 
@@ -129,7 +131,7 @@ public static class BookingSeeder
                 schedule = schedule.AddDays(1);
             }
 
-            await dbContext.ScheduledFlights.Include(f => f.Flight)
+            await _dbContext.ScheduledFlights.Include(f => f.Flight)
                 .Where(f => f.Flight.FlightId == flightId && f.DepartureTime >= now)
                 .ExecuteDeleteAsync();
 
@@ -137,7 +139,7 @@ public static class BookingSeeder
             {
                 var current = schedule.AddDays(i);
                 // ExecuteDeleteAsync above should have nuked all relevant entities.
-                dbContext.Entry(new ScheduledFlight()
+                _dbContext.Entry(new ScheduledFlight()
                 {
                     Flight = flight,
                     DepartureTime = current
@@ -159,7 +161,7 @@ public static class BookingSeeder
         //   + Between G and H
         // - Add a flag to domain class to indicate emergency row.
 
-        await dbContext.Seats.Include(s => s.Flight)
+        await _dbContext.Seats.Include(s => s.Flight)
             .ExecuteDeleteAsync();
 
         var layout = new List<(IEnumerable<int> Rows, string Letters, SeatType Class)>();
@@ -235,7 +237,7 @@ public static class BookingSeeder
             {
                 foreach (var letter in letters.Where(char.IsAsciiLetter))
                 {
-                    dbContext.Entry(new Seat()
+                    _dbContext.Entry(new Seat()
                     {
                         Name = $"{nameof(Seat)} {row}{letter} - " +
                                $"{Enum.GetName(@class)} Class",
@@ -258,46 +260,5 @@ public static class BookingSeeder
                 }
             }
         }
-    }
-
-    private static async Task UpdateLuggage(
-        this ApplicationDbContext dbContext,
-        decimal amount,
-        decimal price
-    )
-    {
-        await dbContext.Luggage.Where(l => l.Amount == amount)
-            .ExecuteDeleteAsync();
-
-        dbContext.Entry(new Luggage()
-        {
-            Name = $"Additional Luggage - {amount}kg",
-            Type = nameof(Luggage),
-            Price = price,
-            ImageSrc = new Uri("https://media.istockphoto.com/id/474510508/photo/purple-suitcase-isolated-on-white-background.jpg?s=612x612&w=0&k=20&c=vUvZv4JfS43vodCyXJb_JlH9mKbPcBtdgr0mmrjjejY="),
-            Amount = amount
-        }).State = EntityState.Added;
-    }
-
-    private static async Task UpdateMeal(
-        this ApplicationDbContext dbContext,
-        string dishName,
-        string description,
-        decimal price,
-        Uri imageSrc
-    )
-    {
-        await dbContext.Meals.Where(m => m.DishName == dishName)
-            .ExecuteDeleteAsync();
-
-        dbContext.Entry(new Meal()
-        {
-            Name = $"Hot Meal - {dishName}",
-            Type = nameof(Meal),
-            Price = price,
-            ImageSrc = imageSrc,
-            DishName = dishName,
-            Description = description
-        }).State = EntityState.Added;
     }
 }

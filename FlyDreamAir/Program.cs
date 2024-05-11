@@ -95,6 +95,9 @@ builder.Services.AddScoped<CardService>();
 builder.Services.AddScoped<FlightsService>();
 builder.Services.AddScoped<NewsService>();
 
+builder.Services.AddScoped<FlightsSeeder>();
+builder.Services.AddScoped<AddOnsSeeder>();
+
 // Hacks for prerendering to work.
 builder.Services.AddScoped(sp => new HttpClient());
 builder.Services.AddScoped<ClientServices.BookingsService>();
@@ -115,8 +118,6 @@ if (app.Environment.IsDevelopment())
     app.UseMigrationsEndPoint();
     app.UseSwagger();
     app.UseSwaggerUI();
-
-    await app.SeedBookingData();
 }
 else
 {
