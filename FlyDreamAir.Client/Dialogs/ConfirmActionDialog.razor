@@ -1,0 +1,22 @@
+﻿<MudDialog Style="background-color: var(--mud-palette-background-grey);">
+    <DialogContent>
+        <MudText>
+            Are you sure you want to perform this action?
+            User data may be <b>irreversibly deleted</b>!
+        </MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Error" OnClick="() => MudDialog?.Close()">
+            OK
+        </MudButton>
+        <MudButton Color="Color.Primary" OnClick="() => MudDialog?.Cancel()">
+            Cancel
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+
+@code {
+    [CascadingParameter]
+    MudDialogInstance? MudDialog { get; set; }
+}

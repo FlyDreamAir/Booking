@@ -100,6 +100,7 @@ builder.Services.AddScoped<AddOnsSeeder>();
 
 // Hacks for prerendering to work.
 builder.Services.AddScoped(sp => new HttpClient());
+builder.Services.AddScoped<ClientServices.AdminService>();
 builder.Services.AddScoped<ClientServices.BookingsService>();
 builder.Services.AddScoped<ClientServices.NewsService>();
 

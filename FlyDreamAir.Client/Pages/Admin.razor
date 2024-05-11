@@ -1,5 +1,9 @@
 ﻿@page "/Admin"
+@using System.Collections.ObjectModel
+@inject AdminService AdminService
+@inject IDialogService DialogService
 @inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
 @inject NavigationManager NavigationManager
 
 <PageTitle>Administration</PageTitle>
@@ -13,7 +17,186 @@
                  Style="user-select: none;">
             FlyDreamAir Administration
         </MudText>
+
+        <MudStack Class="w-100 px-8 py-2">
+            <MudText Typo="@Typo.h5"
+                     Style="user-select: none;">
+                Database
+            </MudText>
+
+            <MudStack Spacing="2">
+                <MudStack Row="true">
+                    <MudText Typo="@Typo.h6"
+                             Style="user-select: none;">
+                        Seeding
+                    </MudText>
+
+                    @if (_isSeeding)
+                    {
+                        <MudProgressCircular Indeterminate="true" />
+                    }
+                </MudStack>
+
+                <MudText>
+                    Initializes the database with flights and services data.
+                    <b>This may delete existing bookings!</b>
+                </MudText>
+
+                @if (!string.IsNullOrWhiteSpace(_seedingError))
+                {
+                    <MudText Color="@Color.Error">
+                        <pre>@_seedingError</pre>
+                    </MudText>
+                }
+
+                <MudStack Row="true">
+                    <MudButton Variant="@Variant.Filled"
+                               Color="@Color.Error"
+                               Style="border-radius: 100px;"
+                               Disabled="@_isSeeding"
+                               OnClick="@(() => ButtonAction_Click("SeedFlights"))">
+                        Seed Flights (next 10 days)
+                    </MudButton>
+
+                    <MudButton Variant="@Variant.Filled"
+                               Color="@Color.Error"
+                               Style="border-radius: 100px;"
+                               Disabled="@_isSeeding"
+                               OnClick="@(() => ButtonAction_Click("SeedAddOns"))">
+                        Seed Add-on Services
+                    </MudButton>
+                </MudStack>
+            </MudStack>
+
+            <MudStack Spacing="2">
+                <MudStack Row="true">
+                    <MudText Typo="@Typo.h6"
+                             Style="user-select: none;">
+                        Reset
+                    </MudText>
+
+                    @if (_isNuking)
+                    {
+                        <MudProgressCircular Indeterminate="true" />
+                    }
+                </MudStack>
+
+                <MudText>
+                    Clears <b>all</b> flights, add-ons, and booking information.
+                    User accounts are kept intact.
+                </MudText>
+
+                @if (!string.IsNullOrWhiteSpace(_nukingError))
+                {
+                    <MudText Color="@Color.Error">
+                        <pre>@_nukingError</pre>
+                    </MudText>
+                }
+
+                <MudStack Row="true">
+                    <MudButton Variant="@Variant.Filled"
+                               Color="@Color.Error"
+                               Style="border-radius: 100px;"
+                               Disabled="@_isSeeding"
+                               OnClick="@(() => ButtonAction_Click("Nuke"))">
+                        Reset Database
+                    </MudButton>
+                </MudStack>
+            </MudStack>
+
+            <MudStack Spacing="2" Class="pb-16">
+                <MudStack Row="true">
+                    <MudText Typo="@Typo.h6"
+                             Style="user-select: none;">
+                        Custom Invocation
+                    </MudText>
+
+                    @if (_isExecuting)
+                    {
+                        <MudProgressCircular Indeterminate="true" />
+                    }
+                </MudStack>
+
+                @if (!string.IsNullOrWhiteSpace(_executingError))
+                {
+                    <MudText Color="@Color.Error">
+                        <pre>@_executingError</pre>
+                    </MudText>
+                }
+
+                <MudText>
+                    Execute custom SQL here.
+                </MudText>
+
+                <PrerenderView>
+                    <Prerender>
+                        <MudStack AlignItems="@AlignItems.Center">
+                            <MudProgressCircular Indeterminate="true" />
+                        </MudStack>
+                    </Prerender>
+                    <Content>
+                        <style>
+                            .FlyDreamAir-CodeEditor-Admin-Sql {
+                                height: 16rem;
+                            }
+                        </style>
+                        <StandaloneCodeEditor @ref="_editor"
+                                              CssClass="FlyDreamAir-CodeEditor-Admin-Sql"
+                                              ConstructionOptions="@(e =>
+                                                  new StandaloneEditorConstructionOptions
+                                                  {
+                                                      AutomaticLayout = true,
+                                                      Language = "sql",
+                                                      Theme = "vs-dark"
+                                                  })" />
+                    </Content>
+                </PrerenderView>
+
+                <MudStack Row="true">
+                    <MudButton Variant="@Variant.Filled"
+                                Color="@Color.Error"
+                                Style="border-radius: 100px;"
+                                Disabled="@_isExecuting"
+                                OnClick="ButtonExecute_Click">
+                        Execute
+                    </MudButton>
+                </MudStack>
+
+                @if (_header is not null && _rows is not null && _rowsAffected.HasValue)
+                {
+                    @if (_rowsAffected == -1)
+                    {
+                        <MudText>
+                            <b>Result</b>
+                        </MudText>
+                    }
+                    else
+                    {
+                        <MudText>
+                            <b>@_rowsAffected</b> row(s) affected.
+                        </MudText>
+                    }
+                    <MudDataGrid T="string[]"
+                                 SortMode="@SortMode.Multiple"
+                                 Items="@_rows">
+                        <Columns>
+                            @for (int i = 0; i < _header.Length; ++i)
+                            {
+                                var index = i;
+                                <PropertyColumn Property="@(x => x[index])"
+                                                Title="@_header[index]"
+                                                Sortable="true" />
+                            }
+                        </Columns>
+                        <PagerContent>
+                            <MudDataGridPager T="string[]" />
+                        </PagerContent>
+                    </MudDataGrid>
+                }
+            </MudStack>
+        </MudStack>
     </Authorized>
+
     <NotAuthorized>
         <MudText Typo="@Typo.h4"
                  Align="@Align.Center"
@@ -39,15 +222,198 @@
                     </Wrapper>
                 }
             </MudText>
-            <MudProgressCircular Max="10" Min="0" Value="@_secondsLeft" Size="@Size.Large" />
+            <MudProgressCircular Max="5" Min="0" Value="@_secondsLeft" Size="@Size.Large" />
         </MudStack>
     </NotAuthorized>
 </AuthorizeView>
 
 @code {
-    int _secondsLeft = 10;
-    bool _countdownStarted = false;
-    MudText? _unauthorizedText;
+    private bool _isSeeding = false;
+    private string? _seedingError;
+    private bool _isNuking = false;
+    private string? _nukingError;
+    private bool _isExecuting = false;
+    private string? _executingError;
+
+    private string[]? _header;
+    private ObservableCollection<string[]>? _rows;
+    private int? _rowsAffected;
+
+    private StandaloneCodeEditor? _editor;
+
+    private async Task ButtonAction_Click(string operation)
+    {
+        var dialog = await DialogService.ShowAsync<ConfirmActionDialog>(
+            operation switch
+            {
+                "SeedFlights" => "Seed Flights",
+                "SeedAddOns" => "Seed Add-on Services",
+                "Nuke" => "Reset Database",
+                _ => throw new InvalidOperationException("Invalid action.")
+            },
+            new DialogOptions
+            {
+                MaxWidth = MaxWidth.ExtraSmall,
+                FullWidth = true
+            }
+        );
+
+        var result = await dialog.Result;
+        if (result.Canceled)
+        {
+            return;
+        }
+
+        bool failed = false;
+
+        try
+        {
+            switch (operation)
+            {
+                case "SeedFlights":
+                    _seedingError = null;
+                    _isSeeding = true;
+                    StateHasChanged();
+                    await AdminService.SeedFlightsAsync();
+                    break;
+                case "SeedAddOns":
+                    _seedingError = null;
+                    _isSeeding = true;
+                    StateHasChanged();
+                    await AdminService.SeedAddOnsAsync();
+                    break;
+                case "Nuke":
+                    _nukingError = null;
+                    _isNuking = true;
+                    StateHasChanged();
+                    await AdminService.NukeAsync();
+                    break;
+            }
+        }
+        catch (Exception e)
+        {
+            failed = true;
+            switch (operation)
+            {
+                case "SeedFlights":
+                case "SeedAddOns":
+                    _seedingError = e.ToString();
+                    break;
+                case "Nuke":
+                    _nukingError = e.ToString();
+                    break;
+            }
+        }
+
+        switch (operation)
+        {
+            case "SeedFlights":
+            case "SeedAddOns":
+                _isSeeding = false;
+                break;
+            case "Nuke":
+                _isNuking = false;
+                break;
+        }
+        StateHasChanged();
+
+        if (failed)
+        {
+            Snackbar.Add("Failed to complete action.", Severity.Error);
+        }
+        else
+        {
+            Snackbar.Add("Action completed successfully.", Severity.Success);
+        }
+    }
+
+    private async Task ButtonExecute_Click()
+    {
+        if (_editor is null)
+        {
+            return;
+        }
+
+        if (_isExecuting)
+        {
+            return;
+        }
+
+        var code = await _editor.GetValue();
+        var upperCode = code.ToUpperInvariant();
+        if (upperCode.Contains("DELETE")
+            || upperCode.Contains("UPDATE")
+            || upperCode.Contains("DROP"))
+        {
+            var dialog = await DialogService.ShowAsync<ConfirmActionDialog>(
+                "SQL Execution",
+                new DialogOptions
+                    {
+                        MaxWidth = MaxWidth.ExtraSmall,
+                        FullWidth = true
+                    }
+            );
+
+            var result = await dialog.Result;
+            if (result.Canceled)
+            {
+                return;
+            }
+        }
+
+        bool failed = false;
+
+        try
+        {
+            _executingError = null;
+            _isExecuting = true;
+            _header = null;
+            _rows = null;
+            StateHasChanged();
+
+            var lines = AdminService.ExecuteAsync(code);
+            var enumerator = lines.GetAsyncEnumerator();
+
+            if (await enumerator.MoveNextAsync())
+            {
+                _rowsAffected = int.Parse(enumerator.Current[0]);
+                await enumerator.MoveNextAsync();
+
+                _header = enumerator.Current;
+                _rows = new();
+
+                StateHasChanged();
+
+                while (await enumerator.MoveNextAsync())
+                {
+                    _rows.Add(enumerator.Current);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            _executingError = e.ToString();
+            failed = true;
+        }
+        finally
+        {
+            _isExecuting = false;
+            StateHasChanged();
+        }
+
+        if (failed)
+        {
+            Snackbar.Add("Failed to complete query.", Severity.Error);
+        }
+        else
+        {
+            Snackbar.Add("Query completed successfully.", Severity.Success);
+        }
+    }
+
+    private int _secondsLeft = 5;
+    private bool _countdownStarted = false;
+    private MudText? _unauthorizedText;
 
     protected override void OnAfterRender(bool firstRender)
     {
