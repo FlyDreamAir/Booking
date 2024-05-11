@@ -38,6 +38,25 @@ public abstract class HttpApiService
         }
     }
 
+    protected Task<HttpResponseMessage> _PostAsync(
+        Dictionary<string, object?>? args = null,
+        HttpContent? content = null,
+        [CallerMemberName] string caller = ""
+    )
+    {
+        return _httpClient.PostAsync(_GetApiUri(args, caller), content);
+    }
+
+    protected async Task _PostVoidAsync(
+        Dictionary<string, object?>? args = null,
+        HttpContent? content = null,
+        [CallerMemberName] string caller = ""
+    )
+    {
+        var response = await _PostAsync(args, content, caller);
+        response.EnsureSuccessStatusCode();
+    }
+
     private string _GetApiUri(
         Dictionary<string, object?>? args = null,
         [CallerMemberName] string caller = ""

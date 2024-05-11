@@ -26,6 +26,7 @@ builder.Services.AddScoped(sp =>
     {
         BaseAddress = new Uri(builder.HostEnvironment.BaseAddress)
     });
+builder.Services.AddScoped<AdminService>();
 builder.Services.AddScoped<BookingsService>();
 builder.Services.AddScoped<NewsService>();
 
