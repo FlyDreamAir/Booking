@@ -219,7 +219,8 @@
                     return await BookingsService.GetFlightAsync(id, departure);
                 })
                 .ToListAsync();
-            _journey = _flights.ToJourney(From, To, Date.Value, ReturnDate);
+            // Date must be provided if _journey is null.
+            _journey = _flights.ToJourney(From, To, Date!.Value, ReturnDate);
             _currentFlight = _flights[FlightIndex];
 
             _addOns = await Enumerable.Zip(AddOnIds, AddOnFlightIndexes, AddOnAmounts)
