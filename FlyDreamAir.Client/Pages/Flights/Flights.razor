@@ -98,14 +98,18 @@
 
 @if (_selectedJourney is not null)
 {
+    var localDate = _selectedJourney.From.GetLocalTime(Date);
+    var localReturnDate = ReturnDate.HasValue ?
+        _selectedJourney.To.GetLocalTime(ReturnDate.Value) : (DateTimeOffset?)null;
+
     <MudHtmlForm Action="/Flights/Seats"
                  Method="@HtmlFormMethod.Get"
                  Style="display: none;"
                  @ref="_form">
         <input name="from" value="@From" />
         <input name="to" value="@To" />
-        <input name="date" value="@Date" />
-        <input name="returnDate" value="@ReturnDate" />
+        <input name="date" value="@localDate" />
+        <input name="returnDate" value="@localReturnDate" />
         @foreach (var flight in _selectedJourney.Flights.Concat(_selectedJourney.ReturnFlights))
         {
             <input name="flightId" value="@flight.FlightId" />
@@ -140,15 +144,8 @@
     {
         if (_journeys is null)
         {
-            var fromAirport = await BookingService.GetAirportAsync(From);
-            var toAirport = await BookingService.GetAirportAsync(To);
-
-            var localDate = fromAirport.GetLocalDate(Date);
-            var localReturnDate = ReturnDate.HasValue ?
-                toAirport.GetLocalDate(ReturnDate.Value) : (DateTimeOffset?)null;
-
             _journeys = await BookingService
-                .GetJourneysAsync(From, To, localDate, localReturnDate)
+                .GetJourneysAsync(From, To, Date, ReturnDate)
                 .OrderBy(j => j.BaseCost)
                 .ThenBy(j => j.Flights.Count + j.ReturnFlights.Count)
                 .ToListAsync();

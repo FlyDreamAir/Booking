@@ -159,17 +159,21 @@
         </DeviceView>
     }
 
-    <!-- Shadow input element to convert to the correct format. -->
-    <input name="date"
-           value="@(_date?
-                        .ToString("yyyy-MM-dd",
-                            System.Globalization.CultureInfo.InvariantCulture))"
-           hidden />
-    <input name="returnDate"
-           value="@(_returnDate?
-                        .ToString("yyyy-MM-dd",
-                            System.Globalization.CultureInfo.InvariantCulture))"
-           hidden />
+    @{
+        var localDate = _date.HasValue ?
+            _fromAirport?.GetLocalDate(_date) : (DateTimeOffset?)null;
+        var localReturnDate = _returnDate.HasValue ?
+            _toAirport?.GetLocalDate(_returnDate.Value) : (DateTimeOffset?)null;
+
+        <!-- Shadow input element to convert to the correct format. -->
+        <input name="date"
+               value="@localDate"
+               hidden />
+        <input name="returnDate"
+               value="@localReturnDate"
+               hidden />
+    }
+
 </MudHtmlForm>
 
 @code {

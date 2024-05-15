@@ -101,9 +101,9 @@
     && _journey is not null)
 {
     var localDate = Date.HasValue ?
-        _journey.From.GetLocalDate(Date) : (DateTimeOffset?)null;
+        _journey.From.GetLocalTime(Date) : (DateTimeOffset?)null;
     var localReturnDate = ReturnDate.HasValue ?
-        _journey.To.GetLocalDate(ReturnDate.Value) : (DateTimeOffset?)null;
+        _journey.To.GetLocalTime(ReturnDate.Value) : (DateTimeOffset?)null;
 
     <MudHtmlForm Action="@FormAction"
                  Method="@FormMethod"
