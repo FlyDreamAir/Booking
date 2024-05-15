@@ -6,10 +6,10 @@
 @inject ISnackbar Snackbar
 @inject NavigationManager NavigationManager
 
-<PageTitle>Administration</PageTitle>
-
 <AuthorizeView Policy="FlyDreamAirEmployee">
     <Authorized>
+        <PageTitle>Administration</PageTitle>
+
         <MudText Typo="@Typo.h4"
                  Align="@Align.Center"
                  Color="@Color.Primary"
@@ -198,6 +198,8 @@
     </Authorized>
 
     <NotAuthorized>
+        <PageTitle>Administration</PageTitle>
+
         <MudText Typo="@Typo.h4"
                  Align="@Align.Center"
                  Color="@Color.Primary"
@@ -208,21 +210,9 @@
         <MudStack Class="p-2" AlignItems="@AlignItems.Center">
             <MudText Class="p-2" @ref="@_unauthorizedText">
                 You seem to have landed on the wrong page.<br />
-                Redirecting you to the correct page in
-                @if (_secondsLeft > 1)
-                {
-                    <Wrapper>
-                        <b>@_secondsLeft</b> seconds.
-                    </Wrapper>
-                }
-                else
-                {
-                    <Wrapper>
-                        <b>@_secondsLeft</b> second.
-                    </Wrapper>
-                }
+                Redirecting you to the correct page...
             </MudText>
-            <MudProgressCircular Max="5" Min="0" Value="@_secondsLeft" Size="@Size.Large" />
+            <MudProgressCircular Size="@Size.Large" Indeterminate="true" />
         </MudStack>
     </NotAuthorized>
 </AuthorizeView>
@@ -411,33 +401,18 @@
         }
     }
 
-    private int _secondsLeft = 5;
-    private bool _countdownStarted = false;
     private MudText? _unauthorizedText;
 
-    protected override void OnAfterRender(bool firstRender)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        base.OnAfterRender(firstRender);
+        await base.OnAfterRenderAsync(firstRender);
 
-        if (_unauthorizedText is not null && !_countdownStarted)
+        if (_unauthorizedText is not null)
         {
-            _countdownStarted = true;
-            Task.Run(async () =>
-            {
-                while (_secondsLeft > 0)
-                {
-                    await Task.Delay(TimeSpan.FromSeconds(1));
-                    --_secondsLeft;
-                    StateHasChanged();
-                }
-                await using var location = await JSRuntime.InvokeAsync<IJSObjectReference>(
-                    "location.valueOf"
-                );
-                await JSRuntime.InvokeVoidAsync(
-                    "Reflect.set", location, "href",
-                    "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-                );
-            });
+            await JSRuntime.InvokeVoidAsync(
+                "location.assign",
+                "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+            );
         }
     }
 }
