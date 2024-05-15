@@ -111,10 +111,8 @@
                  @ref="_form">
         <input name="from" value="@From" />
         <input name="to" value="@To" />
-        <input name="date" value="@(localDate?
-            .ToString(CultureInfo.InvariantCulture.DateTimeFormat))" />
-        <input name="returnDate" value="@(localReturnDate?
-            .ToString(CultureInfo.InvariantCulture.DateTimeFormat))" />
+        <input name="date" value="@localDate" />
+        <input name="returnDate" value="@localReturnDate" />
         @foreach (var flight in _flights)
         {
             <input name="flightId" value="@flight.FlightId" />
