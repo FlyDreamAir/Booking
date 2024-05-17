@@ -119,11 +119,24 @@
                 StateHasChanged();
             }
             ChangeSeat(null);
-            _seats = await BookingsService.GetSeatsAsync(
-                Flights[FlightIndex].FlightId,
-                Flights[FlightIndex].DepartureTime,
-                _seatType
-            ).ToListAsync();
+
+            while (true)
+            {
+                var currentSeatType = _seatType;
+
+                var newSeats = await BookingsService.GetSeatsAsync(
+                    Flights[FlightIndex].FlightId,
+                    Flights[FlightIndex].DepartureTime,
+                    currentSeatType
+                ).ToListAsync();
+
+                if (_seatType == currentSeatType)
+                {
+                    _seats = newSeats;
+                    break;
+                }
+            }
+
             StateHasChanged();
         }
     }
