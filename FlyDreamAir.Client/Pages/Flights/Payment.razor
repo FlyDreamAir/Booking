@@ -3,6 +3,7 @@
 @using FlyDreamAir.Data.Model
 @inherits WizardPageBase
 @inject BookingsService BookingsService
+@inject IConfiguration Configuration
 @inject NavigationManager NavigationManager
 
 <PageTitle>Payment</PageTitle>
@@ -88,6 +89,16 @@
 
     protected override string FormAction => "/Bookings";
 
+    protected override void OnInitialized()
+    {
+        _name = Configuration["Payment:Name"];
+        _cardNumber = Configuration["Payment:CardNumber"];
+        _expiration = Configuration["Payment:Expiration"];
+        _cvv = Configuration["Payment:CVV"];
+
+        base.OnInitialized();
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (_booking is null)
@@ -101,6 +112,15 @@
         }
 
         await base.OnAfterRenderAsync(firstRender);
+
+        if (_form is not null
+            && _name is not null
+            && _cardNumber is not null
+            && _expiration is not null
+            && _cvv is not null)
+        {
+            await _form.Validate();
+        }
     }
 
     protected override async Task<bool> OnBeforeSubmitAsync()

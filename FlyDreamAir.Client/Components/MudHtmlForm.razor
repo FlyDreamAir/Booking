@@ -62,4 +62,12 @@
             }
         }
     }
+
+    public async Task Validate()
+    {
+        if (_form is not null)
+        {
+            await _form.Validate();
+        }
+    }
 }

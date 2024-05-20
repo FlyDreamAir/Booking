@@ -1,7 +1,9 @@
 ﻿@page "/Flights/Information"
 @using System.ComponentModel.DataAnnotations
 @using System.Globalization
+@using System.Security.Claims
 @inherits WizardPageBase
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Information</PageTitle>
 
@@ -102,6 +104,18 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (string.IsNullOrEmpty(Email))
+        {
+            var authState = await AuthenticationStateProvider
+                .GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user.Identity is not null && user.Identity.IsAuthenticated)
+            {
+                Email = user.FindFirst(ClaimTypes.Email)?.Value;
+            }
+        }
+
         await base.OnAfterRenderAsync(firstRender);
 
         if (_form is not null
